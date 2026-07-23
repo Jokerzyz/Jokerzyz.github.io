@@ -7,9 +7,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = host.includes("localhost") ? "http" : "https";
   const origin = `${protocol}://${host}`;
-  const title = "Interactive CV — 3D Portfolio Prototype";
+  const title = "ZHENYUAN ZHANG — 中文创意作品集";
   const description =
-    "A scroll-driven 3D résumé prototype built around a Blender character.";
+    "一份以全屏转场、动态项目列表和分栏作品详情构成的中文创意作品集。";
 
   return {
     title,
@@ -24,10 +24,10 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: `${origin}/og.png`,
+          url: `${origin}/portfolio-og.png`,
           width: 1536,
           height: 1024,
-          alt: "Interactive CV 3D Portfolio Prototype",
+          alt: "ZHENYUAN ZHANG 中文创意作品集",
         },
       ],
     },
@@ -35,7 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: [`${origin}/og.png`],
+      images: [`${origin}/portfolio-og.png`],
     },
   };
 }
