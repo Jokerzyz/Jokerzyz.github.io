@@ -35,6 +35,19 @@ type Project = {
   }>;
 };
 
+type Experience = {
+  date: string;
+  label: string;
+  company: string;
+  role: string;
+  title: string;
+  copy: string;
+  mediaKind: "edit" | "brand" | "interactive";
+  mediaLabel: string;
+  video?: string;
+  poster?: string;
+};
+
 const sections: Array<{ id: SectionName; label: string }> = [
   { id: "home", label: "首页" },
   { id: "work", label: "作品" },
@@ -113,24 +126,36 @@ const projects: Project[] = [
   },
 ];
 
-const aboutSteps = [
+const aboutSteps: Experience[] = [
   {
-    date: "2018",
-    label: "视觉基础",
-    title: "从画面开始",
-    copy: "先从平面、影像与构图建立视觉判断，学习如何用光线、节奏和信息层级讲清楚一件事。",
+    date: "2020",
+    label: "独立创作",
+    company: "个人与合作项目",
+    role: "视觉设计",
+    title: "从画面建立叙事",
+    copy: "负责视觉概念、平面与影像剪辑，用构图、光线和节奏把项目内容整理成清晰的观看路径。",
+    mediaKind: "edit",
+    mediaLabel: "剪辑与视觉实验 / 2020",
   },
   {
-    date: "2021",
-    label: "品牌与动态",
-    title: "让系统动起来",
-    copy: "把品牌识别扩展到动态场景，在不同屏幕和媒介中保持统一的视觉语气与运动规则。",
+    date: "2023",
+    label: "品牌项目",
+    company: "品牌与内容团队",
+    role: "动态设计 / 剪辑",
+    title: "让品牌系统动起来",
+    copy: "把品牌识别扩展到发布片、社交内容和栏目包装，在不同屏幕里保持统一的视觉语气与运动规则。",
+    mediaKind: "brand",
+    mediaLabel: "品牌动态与发布影像 / 2023",
   },
   {
-    date: "2024",
-    label: "互动开发",
+    date: "2026",
+    label: "数字体验",
+    company: "互动与数字项目",
+    role: "视觉设计 / 创意开发",
     title: "把观看变成参与",
-    copy: "将设计、动画和前端实现整合到同一流程，用代码完成可感知、可探索的数字体验。",
+    copy: "将设计、动画、剪辑和前端实现整合到同一流程，用影像与交互完成可感知、可探索的数字体验。",
+    mediaKind: "interactive",
+    mediaLabel: "数字项目 Showreel / 2026",
   },
 ];
 
@@ -149,6 +174,36 @@ function ArtCorridor({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function HomeShowreel() {
+  return (
+    <div className="home-showreel" aria-label="项目影像视觉台">
+      <div className="showreel-shot shot-one">
+        <span>01</span>
+        <strong>VISUAL</strong>
+        <i />
+      </div>
+      <div className="showreel-shot shot-two">
+        <span>02</span>
+        <strong>MOTION</strong>
+        <i />
+      </div>
+      <div className="showreel-shot shot-three">
+        <span>03</span>
+        <strong>DIGITAL</strong>
+        <i />
+      </div>
+      <div className="showreel-frame" aria-hidden="true" />
+      <div className="showreel-caption">
+        <span>SELECTED WORK / 2020—2026</span>
+        <b>无声循环 SHOWREEL 预留位</b>
+      </div>
+      <div className="showreel-progress" aria-hidden="true">
+        <i />
+      </div>
+    </div>
+  );
+}
+
 function VisualScene({
   visual,
   project,
@@ -158,141 +213,164 @@ function VisualScene({
   project: Project;
   index: number;
 }) {
+  const sceneRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
   const style = {
     "--accent": project.accent,
     "--surface": project.surface,
   } as CSSProperties;
 
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setIsVisible(true);
+        observer.disconnect();
+      },
+      { threshold: 0.18 },
+    );
+
+    observer.observe(scene);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <article
-      className={`visual-scene visual-${visual.kind}`}
+      ref={sceneRef}
+      className={`visual-scene visual-${visual.kind} ${isVisible ? "is-visible" : ""}`}
       style={style}
       aria-label={visual.label}
     >
-      <div className="visual-meta">
-        <span>{String(index + 1).padStart(2, "0")}</span>
-        <span>{visual.label}</span>
-      </div>
+      <div className="scene-content">
+        <div className="visual-meta">
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <span>{visual.label}</span>
+        </div>
 
-      {visual.kind === "corridor" && <ArtCorridor />}
+        {visual.kind === "corridor" && <ArtCorridor />}
 
-      {visual.kind === "console" && (
-        <div className="console-layout">
-          <div className="console-header">
-            <span>INTERACTION PANEL</span>
-            <i />
-            <i />
-            <i />
+        {visual.kind === "console" && (
+          <div className="console-layout">
+            <div className="console-header">
+              <span>INTERACTION PANEL</span>
+              <i />
+              <i />
+              <i />
+            </div>
+            <div className="console-screen">
+              <span>准备好了吗？</span>
+              <strong>选择你想进入的画面</strong>
+            </div>
+            <div className="console-options">
+              <button type="button">叙事</button>
+              <button type="button">动作</button>
+              <button type="button">探索</button>
+            </div>
+            <div className="console-meter">
+              <i />
+            </div>
+            <div className="console-grid">
+              {Array.from({ length: 16 }, (_, cell) => (
+                <span key={cell} />
+              ))}
+            </div>
           </div>
-          <div className="console-screen">
-            <span>准备好了吗？</span>
-            <strong>选择你想进入的画面</strong>
+        )}
+
+        {visual.kind === "mobile" && (
+          <div className="phone-stage">
+            <div className="phone phone-left">
+              <div className="phone-island" />
+              <span className="phone-kicker">LOADING / 01</span>
+              <div className="phone-orb">
+                <i />
+              </div>
+              <strong>移动叙事</strong>
+            </div>
+            <div className="phone phone-right">
+              <div className="phone-island" />
+              <span className="phone-kicker">PROJECT / 04</span>
+              <div className="phone-card">
+                <i />
+                <b>{project.title}</b>
+              </div>
+              <p>为不同屏幕重新组织信息，而不是简单缩小桌面页面。</p>
+            </div>
           </div>
-          <div className="console-options">
-            <button type="button">叙事</button>
-            <button type="button">动作</button>
-            <button type="button">探索</button>
+        )}
+
+        {visual.kind === "poster" && (
+          <div className="poster-layout">
+            <p>PROJECT / {project.year}</p>
+            <div className="poster-title">
+              <span>{project.title.slice(0, 2)}</span>
+              <span>{project.title.slice(2) || "系统"}</span>
+            </div>
+            <div className="poster-stamp">
+              <i />
+              <span>VISUAL<br />DIRECTION</span>
+            </div>
+            <div className="poster-lines" />
           </div>
-          <div className="console-meter">
-            <i />
+        )}
+
+        {visual.kind === "orbits" && (
+          <div className="orbit-layout">
+            <div className="orbit orbit-one"><i /></div>
+            <div className="orbit orbit-two"><i /></div>
+            <div className="orbit orbit-three"><i /></div>
+            <div className="orbit-copy">
+              <span>VISUAL LANGUAGE</span>
+              <strong>{project.title}</strong>
+              <p>从一个核心母题向不同媒介扩展。</p>
+            </div>
           </div>
-          <div className="console-grid">
-            {Array.from({ length: 16 }, (_, cell) => (
-              <span key={cell} />
+        )}
+
+        {visual.kind === "archive" && (
+          <div className="archive-layout">
+            {Array.from({ length: 8 }, (_, card) => (
+              <div className="archive-card" key={card}>
+                <span>{String(card + 1).padStart(2, "0")}</span>
+                <i />
+                <b>{card % 2 === 0 ? project.title : project.client}</b>
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {visual.kind === "mobile" && (
-        <div className="phone-stage">
-          <div className="phone phone-left">
-            <div className="phone-island" />
-            <span className="phone-kicker">LOADING / 01</span>
-            <div className="phone-orb">
+        {visual.kind === "kinetic" && (
+          <div className="kinetic-layout">
+            <div className="kinetic-word word-a">动</div>
+            <div className="kinetic-word word-b">态</div>
+            <div className="kinetic-word word-c">场</div>
+            <div className="kinetic-axis axis-x" />
+            <div className="kinetic-axis axis-y" />
+            <div className="kinetic-note">
+              <span>INPUT</span>
               <i />
+              <span>VISUAL</span>
             </div>
-            <strong>移动叙事</strong>
           </div>
-          <div className="phone phone-right">
-            <div className="phone-island" />
-            <span className="phone-kicker">PROJECT / 04</span>
-            <div className="phone-card">
-              <i />
-              <b>{project.title}</b>
-            </div>
-            <p>为不同屏幕重新组织信息，而不是简单缩小桌面页面。</p>
-          </div>
-        </div>
-      )}
+        )}
 
-      {visual.kind === "poster" && (
-        <div className="poster-layout">
-          <p>PROJECT / {project.year}</p>
-          <div className="poster-title">
-            <span>{project.title.slice(0, 2)}</span>
-            <span>{project.title.slice(2) || "系统"}</span>
+        {visual.kind === "cards" && (
+          <div className="cards-layout">
+            {["开场", "章节", "互动", "结尾"].map((label, card) => (
+              <div className="system-card" key={label}>
+                <span>0{card + 1}</span>
+                <div className={`system-art art-${card}`} />
+                <strong>{label}</strong>
+                <p>{project.title}</p>
+              </div>
+            ))}
           </div>
-          <div className="poster-stamp">
-            <i />
-            <span>VISUAL<br />DIRECTION</span>
-          </div>
-          <div className="poster-lines" />
-        </div>
-      )}
-
-      {visual.kind === "orbits" && (
-        <div className="orbit-layout">
-          <div className="orbit orbit-one"><i /></div>
-          <div className="orbit orbit-two"><i /></div>
-          <div className="orbit orbit-three"><i /></div>
-          <div className="orbit-copy">
-            <span>VISUAL LANGUAGE</span>
-            <strong>{project.title}</strong>
-            <p>从一个核心母题向不同媒介扩展。</p>
-          </div>
-        </div>
-      )}
-
-      {visual.kind === "archive" && (
-        <div className="archive-layout">
-          {Array.from({ length: 8 }, (_, card) => (
-            <div className="archive-card" key={card}>
-              <span>{String(card + 1).padStart(2, "0")}</span>
-              <i />
-              <b>{card % 2 === 0 ? project.title : project.client}</b>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {visual.kind === "kinetic" && (
-        <div className="kinetic-layout">
-          <div className="kinetic-word word-a">动</div>
-          <div className="kinetic-word word-b">态</div>
-          <div className="kinetic-word word-c">场</div>
-          <div className="kinetic-axis axis-x" />
-          <div className="kinetic-axis axis-y" />
-          <div className="kinetic-note">
-            <span>INPUT</span>
-            <i />
-            <span>VISUAL</span>
-          </div>
-        </div>
-      )}
-
-      {visual.kind === "cards" && (
-        <div className="cards-layout">
-          {["开场", "章节", "互动", "结尾"].map((label, card) => (
-            <div className="system-card" key={label}>
-              <span>0{card + 1}</span>
-              <div className={`system-art art-${card}`} />
-              <strong>{label}</strong>
-              <p>{project.title}</p>
-            </div>
-          ))}
-        </div>
-      )}
+        )}
+      </div>
+      <div className="scene-wipe" aria-hidden="true" />
     </article>
   );
 }
@@ -332,7 +410,7 @@ function HomeSection() {
   return (
     <section className="main-section home-section" aria-label="首页">
       <div className="home-visual">
-        <ArtCorridor />
+        <HomeShowreel />
         <p className="home-edition">PORTFOLIO / 2026</p>
       </div>
       <div className="home-title">
@@ -381,15 +459,17 @@ function WorkSection({
       >
         <div className="preview-square" />
         <div className="preview-frame">
-          {hovered === 0 ? (
-            <ArtCorridor compact />
-          ) : (
-            <div className={`preview-art preview-art-${hovered}`}>
-              <span>{projects[hovered].title}</span>
-              <i />
-              <b>0{hovered + 1}</b>
-            </div>
-          )}
+          <div className="preview-switch" key={hovered}>
+            {hovered === 0 ? (
+              <ArtCorridor compact />
+            ) : (
+              <div className={`preview-art preview-art-${hovered}`}>
+                <span>{projects[hovered].title}</span>
+                <i />
+                <b>0{hovered + 1}</b>
+              </div>
+            )}
+          </div>
         </div>
         <p>{projects[hovered].year} / VIEW PROJECT</p>
       </div>
@@ -400,6 +480,48 @@ function WorkSection({
         <strong>{String(hovered + 1).padStart(2, "0")}</strong>
       </div>
     </section>
+  );
+}
+
+function ExperienceMedia({ experience }: { experience: Experience }) {
+  return (
+    <div
+      className={`experience-media experience-${experience.mediaKind}`}
+      key={experience.date}
+    >
+      {experience.video ? (
+        <video
+          src={experience.video}
+          poster={experience.poster}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        />
+      ) : (
+        <div className="experience-reel" aria-hidden="true">
+          <div className="reel-shot reel-shot-one">
+            <span>{experience.date}</span>
+            <strong>{experience.role}</strong>
+          </div>
+          <div className="reel-shot reel-shot-two">
+            <span>SELECTED PROJECT</span>
+            <i />
+          </div>
+          <div className="reel-shot reel-shot-three">
+            <b>{experience.label}</b>
+            <i />
+          </div>
+        </div>
+      )}
+      <div className="experience-media-caption">
+        <span>PLAYING</span>
+        <p>{experience.mediaLabel}</p>
+        <b>16:9 / LOOP</b>
+      </div>
+      <div className="experience-scanline" aria-hidden="true" />
+    </div>
   );
 }
 
@@ -418,14 +540,21 @@ function AboutSection() {
       </div>
 
       <div className="about-center">
-        <div className="about-word" aria-hidden="true">
-          <span>关</span>
-          <span>于</span>
-        </div>
-        <div className="about-copy" key={activeStep.title}>
-          <span>{activeStep.date} — {activeStep.label}</span>
-          <h2>{activeStep.title}</h2>
-          <p>{activeStep.copy}</p>
+        <ExperienceMedia experience={activeStep} />
+        <div
+          className="about-copy"
+          key={activeStep.title}
+          aria-live="polite"
+        >
+          <div>
+            <span>{activeStep.date} — {activeStep.label}</span>
+            <h2>{activeStep.title}</h2>
+          </div>
+          <div className="experience-copy">
+            <p>{activeStep.copy}</p>
+            <span>{activeStep.company}</span>
+            <b>{activeStep.role}</b>
+          </div>
         </div>
       </div>
 
@@ -480,29 +609,88 @@ function ProjectDetail({
   onClose: () => void;
   onChange: (direction: number) => void;
 }) {
+  const detailRef = useRef<HTMLElement>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(0);
+  const progressRef = useRef<HTMLElement>(null);
+  const targetScrollRef = useRef(0);
+  const scrollFrameRef = useRef<number | null>(null);
   const project = projects[index];
+
+  const animateScroll = useCallback(function scrollStep() {
+    const gallery = galleryRef.current;
+    if (!gallery) {
+      scrollFrameRef.current = null;
+      return;
+    }
+
+    const distance = targetScrollRef.current - gallery.scrollTop;
+    if (Math.abs(distance) < 0.55) {
+      gallery.scrollTop = targetScrollRef.current;
+      scrollFrameRef.current = null;
+      return;
+    }
+
+    gallery.scrollTop += distance * 0.14;
+    scrollFrameRef.current = window.requestAnimationFrame(scrollStep);
+  }, []);
+
+  useEffect(() => {
+    const detail = detailRef.current;
+    const gallery = galleryRef.current;
+    if (!detail || !gallery) return;
+
+    targetScrollRef.current = 0;
+    gallery.scrollTop = 0;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (
+        window.innerWidth <= 820 ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      const max = Math.max(0, gallery.scrollHeight - gallery.clientHeight);
+      targetScrollRef.current = Math.min(
+        max,
+        Math.max(0, targetScrollRef.current + event.deltaY * 0.92),
+      );
+
+      if (scrollFrameRef.current === null) {
+        scrollFrameRef.current = window.requestAnimationFrame(animateScroll);
+      }
+    };
+
+    detail.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      detail.removeEventListener("wheel", handleWheel);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
+    };
+  }, [animateScroll, index]);
 
   const handleScroll = () => {
     const gallery = galleryRef.current;
     if (!gallery) return;
     const max = gallery.scrollHeight - gallery.clientHeight;
-    setProgress(max <= 0 ? 0 : gallery.scrollTop / max);
-  };
-
-  const handleWheel = (event: React.WheelEvent<HTMLElement>) => {
-    if (window.innerWidth <= 820) return;
-    const gallery = galleryRef.current;
-    if (!gallery) return;
-    event.preventDefault();
-    gallery.scrollBy({ top: event.deltaY * 1.15, behavior: "smooth" });
+    const progress = max <= 0 ? 0 : gallery.scrollTop / max;
+    if (progressRef.current) {
+      progressRef.current.textContent = String(
+        Math.min(99, Math.round(progress * 99)),
+      ).padStart(2, "0");
+    }
+    if (scrollFrameRef.current === null) {
+      targetScrollRef.current = gallery.scrollTop;
+    }
   };
 
   return (
     <section
+      ref={detailRef}
       className="project-detail"
-      onWheel={handleWheel}
       style={
         {
           "--accent": project.accent,
@@ -537,7 +725,7 @@ function ProjectDetail({
         <div className="project-scroll-hint">
           <span>滚动查看</span>
           <i />
-          <b>{String(Math.min(99, Math.round(progress * 99))).padStart(2, "0")}</b>
+          <b ref={progressRef}>00</b>
         </div>
       </div>
 
@@ -570,7 +758,6 @@ export default function Home() {
   const [transitioning, setTransitioning] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const timeoutsRef = useRef<number[]>([]);
-  const cursorRef = useRef<HTMLDivElement>(null);
 
   const clearTimers = useCallback(() => {
     timeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -582,16 +769,6 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    const moveCursor = (event: PointerEvent) => {
-      if (!cursorRef.current) return;
-      cursorRef.current.style.transform =
-        `translate3d(${event.clientX}px, ${event.clientY}px, 0)`;
-    };
-    window.addEventListener("pointermove", moveCursor);
-    return () => window.removeEventListener("pointermove", moveCursor);
-  }, []);
-
   useEffect(() => () => clearTimers(), [clearTimers]);
 
   const transitionTo = useCallback(
@@ -600,8 +777,8 @@ export default function Home() {
       clearTimers();
       setTransitioning(true);
       timeoutsRef.current.push(
-        window.setTimeout(action, 310),
-        window.setTimeout(() => setTransitioning(false), 860),
+        window.setTimeout(action, 570),
+        window.setTimeout(() => setTransitioning(false), 1140),
       );
     },
     [clearTimers, transitioning],
@@ -676,8 +853,6 @@ export default function Home() {
 
   return (
     <main className={`site-shell ${loaded ? "is-loaded" : ""}`}>
-      <div className="cursor-square" ref={cursorRef} aria-hidden="true" />
-
       <div className={`site-loader ${loaded ? "is-hidden" : ""}`}>
         <div>
           <i />
