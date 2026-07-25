@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import {
   CSSProperties,
@@ -8,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { generatedContent } from "./content.generated";
 
 type SectionName = "home" | "work" | "about" | "contact";
 type VisualKind =
@@ -20,6 +22,18 @@ type VisualKind =
   | "kinetic"
   | "cards";
 
+type ProjectVisual =
+  | {
+      kind: VisualKind;
+      label: string;
+    }
+  | {
+      kind: "image" | "video";
+      label: string;
+      src: string;
+      poster?: string;
+    };
+
 type Project = {
   year: string;
   client: string;
@@ -29,10 +43,8 @@ type Project = {
   stack: string;
   accent: string;
   surface: string;
-  visuals: Array<{
-    kind: VisualKind;
-    label: string;
-  }>;
+  cover?: string;
+  visuals: ProjectVisual[];
 };
 
 type Experience = {
@@ -46,16 +58,27 @@ type Experience = {
   mediaLabel: string;
   video?: string;
   poster?: string;
+  image?: string;
+};
+
+type HomeContent = {
+  name: string;
+  role: string;
+  intro: string;
+  edition: string;
+  photo?: string;
+  video?: string;
+  poster?: string;
 };
 
 const sections: Array<{ id: SectionName; label: string }> = [
   { id: "home", label: "首页" },
   { id: "work", label: "作品" },
-  { id: "about", label: "关于" },
+  { id: "about", label: "经历" },
   { id: "contact", label: "联系" },
 ];
 
-const projects: Project[] = [
+const defaultProjects: Project[] = [
   {
     year: "2026",
     client: "个人实验",
@@ -126,7 +149,7 @@ const projects: Project[] = [
   },
 ];
 
-const aboutSteps: Experience[] = [
+const defaultAboutSteps: Experience[] = [
   {
     date: "2020",
     label: "独立创作",
@@ -159,6 +182,54 @@ const aboutSteps: Experience[] = [
   },
 ];
 
+const generatedProjects = generatedContent.projects as Array<
+  Omit<Project, "visuals"> & { order: number; visuals: ProjectVisual[] }
+>;
+const generatedExperiences = generatedContent.experiences as Array<
+  Experience & { order: number }
+>;
+
+const defaultVisualSets: ProjectVisual[][] = [
+  [
+    { kind: "corridor", label: "项目气氛 / 视觉概念" },
+    { kind: "console", label: "交互规则 / 信息系统" },
+    { kind: "mobile", label: "移动端 / 响应式体验" },
+    { kind: "poster", label: "动态排版 / 项目视觉" },
+  ],
+  [
+    { kind: "orbits", label: "品牌母题 / 视觉语言" },
+    { kind: "poster", label: "发布主视觉 / 字体系统" },
+    { kind: "cards", label: "内容卡片 / 模板系统" },
+    { kind: "archive", label: "传播物料 / 设计归档" },
+  ],
+];
+
+const projects: Project[] = generatedProjects.length
+  ? generatedProjects.map((project, index) => ({
+      ...project,
+      visuals:
+        project.visuals.length > 0
+          ? project.visuals
+          : defaultVisualSets[index % defaultVisualSets.length],
+    }))
+  : defaultProjects;
+
+const aboutSteps: Experience[] = generatedExperiences.length
+  ? generatedExperiences
+  : defaultAboutSteps;
+
+const homeContent: HomeContent = {
+  name: generatedContent.home.name || "ZHENYUAN ZHANG",
+  role: generatedContent.home.role || "视觉设计 / 创意开发",
+  intro: generatedContent.home.intro || "专注品牌视觉、动态影像与互动网页。",
+  edition: generatedContent.home.edition || "PORTFOLIO / 2026",
+  photo: generatedContent.home.photo,
+  video: generatedContent.home.video,
+  poster: generatedContent.home.poster,
+};
+
+const contactContent = generatedContent.contact;
+
 const curtainColumns = Array.from({ length: 12 }, (_, index) => index);
 
 function ArtCorridor({ compact = false }: { compact?: boolean }) {
@@ -174,28 +245,53 @@ function ArtCorridor({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function HomeShowreel() {
+function HomeShowreel({ content }: { content: HomeContent }) {
+  const hasPersonalMedia = Boolean(content.video || content.photo);
+
   return (
     <div className="home-showreel" aria-label="项目影像视觉台">
-      <div className="showreel-shot shot-one">
-        <span>01</span>
-        <strong>VISUAL</strong>
-        <i />
-      </div>
-      <div className="showreel-shot shot-two">
-        <span>02</span>
-        <strong>MOTION</strong>
-        <i />
-      </div>
-      <div className="showreel-shot shot-three">
-        <span>03</span>
-        <strong>DIGITAL</strong>
-        <i />
-      </div>
+      {content.video ? (
+        <video
+          className="home-primary-media"
+          src={content.video}
+          poster={content.poster}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        />
+      ) : content.photo ? (
+        <div className="home-portrait-layout">
+          <img src={content.photo} alt={`${content.name}个人照片`} />
+          <div className="home-portrait-copy">
+            <span>PROFILE / INTRO</span>
+            <p>{content.intro}</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="showreel-shot shot-one">
+            <span>01</span>
+            <strong>VISUAL</strong>
+            <i />
+          </div>
+          <div className="showreel-shot shot-two">
+            <span>02</span>
+            <strong>MOTION</strong>
+            <i />
+          </div>
+          <div className="showreel-shot shot-three">
+            <span>03</span>
+            <strong>DIGITAL</strong>
+            <i />
+          </div>
+        </>
+      )}
       <div className="showreel-frame" aria-hidden="true" />
       <div className="showreel-caption">
-        <span>SELECTED WORK / 2020—2026</span>
-        <b>无声循环 SHOWREEL 预留位</b>
+        <span>{hasPersonalMedia ? "PERSONAL PROFILE" : "SELECTED WORK / 2020—2026"}</span>
+        <b>{content.video ? "SHOWREEL / LOOP" : content.photo ? content.role : "无声循环 SHOWREEL 预留位"}</b>
       </div>
       <div className="showreel-progress" aria-hidden="true">
         <i />
@@ -249,6 +345,28 @@ function VisualScene({
           <span>{String(index + 1).padStart(2, "0")}</span>
           <span>{visual.label}</span>
         </div>
+
+        {visual.kind === "image" && (
+          <img
+            className="project-asset"
+            src={visual.src}
+            alt={visual.label}
+            loading={index < 2 ? "eager" : "lazy"}
+          />
+        )}
+
+        {visual.kind === "video" && (
+          <video
+            className="project-asset"
+            src={visual.src}
+            poster={visual.poster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
+        )}
 
         {visual.kind === "corridor" && <ArtCorridor />}
 
@@ -410,14 +528,53 @@ function HomeSection() {
   return (
     <section className="main-section home-section" aria-label="首页">
       <div className="home-visual">
-        <HomeShowreel />
-        <p className="home-edition">PORTFOLIO / 2026</p>
+        <HomeShowreel content={homeContent} />
+        <p className="home-edition">{homeContent.edition}</p>
       </div>
       <div className="home-title">
-        <p>视觉设计 / 创意开发</p>
-        <h1>ZHENYUAN ZHANG</h1>
+        <p>{homeContent.role}</p>
+        <h1>{homeContent.name}</h1>
       </div>
     </section>
+  );
+}
+
+function ProjectPreview({ project, index }: { project: Project; index: number }) {
+  const firstMedia = project.visuals.find(
+    (visual) => visual.kind === "image" || visual.kind === "video",
+  );
+
+  if (project.cover) {
+    return <img className="preview-media" src={project.cover} alt="" />;
+  }
+
+  if (firstMedia?.kind === "image") {
+    return <img className="preview-media" src={firstMedia.src} alt="" />;
+  }
+
+  if (firstMedia?.kind === "video") {
+    return (
+      <video
+        className="preview-media"
+        src={firstMedia.src}
+        poster={firstMedia.poster}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+      />
+    );
+  }
+
+  if (index === 0) return <ArtCorridor compact />;
+
+  return (
+    <div className={`preview-art preview-art-${index % 4}`}>
+      <span>{project.title}</span>
+      <i />
+      <b>{String(index + 1).padStart(2, "0")}</b>
+    </div>
   );
 }
 
@@ -460,15 +617,7 @@ function WorkSection({
         <div className="preview-square" />
         <div className="preview-frame">
           <div className="preview-switch" key={hovered}>
-            {hovered === 0 ? (
-              <ArtCorridor compact />
-            ) : (
-              <div className={`preview-art preview-art-${hovered}`}>
-                <span>{projects[hovered].title}</span>
-                <i />
-                <b>0{hovered + 1}</b>
-              </div>
-            )}
+            <ProjectPreview project={projects[hovered]} index={hovered} />
           </div>
         </div>
         <p>{projects[hovered].year} / VIEW PROJECT</p>
@@ -499,6 +648,12 @@ function ExperienceMedia({ experience }: { experience: Experience }) {
           playsInline
           preload="metadata"
         />
+      ) : experience.image ? (
+        <img
+          className="experience-primary-image"
+          src={experience.image}
+          alt={`${experience.date} ${experience.label}`}
+        />
       ) : (
         <div className="experience-reel" aria-hidden="true">
           <div className="reel-shot reel-shot-one">
@@ -526,11 +681,11 @@ function ExperienceMedia({ experience }: { experience: Experience }) {
 }
 
 function AboutSection() {
-  const [step, setStep] = useState(2);
+  const [step, setStep] = useState(Math.max(0, aboutSteps.length - 1));
   const activeStep = aboutSteps[step];
 
   return (
-    <section className="main-section about-section" aria-label="关于">
+    <section className="main-section about-section" aria-label="经历">
       <div className="about-collabs">
         <p>合作方向：</p>
         <span>品牌视觉 /</span>
@@ -581,21 +736,37 @@ function AboutSection() {
 }
 
 function ContactSection() {
+  const emailHref = contactContent.email
+    ? `mailto:${contactContent.email}`
+    : "#contact";
+
   return (
     <section className="main-section contact-section" aria-label="联系">
       <div className="contact-wrapper">
-        <p className="contact-kicker">有合适的项目，欢迎联系</p>
+        <p className="contact-kicker">{contactContent.note}</p>
         <h2>
           <span>与我</span>
           <span>聊聊</span>
         </h2>
         <div className="contact-links">
-          <a href="mailto:" aria-label="发送邮件">邮箱</a>
-          <a href="#contact" aria-label="小红书链接待替换">小红书</a>
-          <a href="#contact" aria-label="领英链接待替换">领英</a>
+          <a href={emailHref} aria-label="发送邮件">邮箱</a>
+          <a
+            href={contactContent.xiaohongshu || "#contact"}
+            aria-label="小红书"
+          >
+            小红书
+          </a>
+          <a
+            href={contactContent.linkedin || "#contact"}
+            aria-label="领英"
+          >
+            领英
+          </a>
         </div>
       </div>
-      <p className="contact-note">链接和邮箱可在下一步替换为你的真实信息</p>
+      <p className="contact-note">
+        {contactContent.email || "在网站内容/联系中填写真实联系方式"}
+      </p>
     </section>
   );
 }
