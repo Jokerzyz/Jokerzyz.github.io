@@ -898,15 +898,17 @@ function ProjectDetail({
       }
       aria-label={`${project.title}项目详情`}
     >
-      <div className="project-info">
-        <nav className="project-nav" aria-label="项目导航">
+      <nav className="project-nav" aria-label="项目导航">
+        <div className="project-nav-controls">
           <button type="button" onClick={onClose}>关闭</button>
-          <div>
+          <div className="project-nav-pager">
             <button type="button" onClick={() => onChange(-1)}>上一个</button>
             <button type="button" onClick={() => onChange(1)}>下一个</button>
           </div>
-        </nav>
+        </div>
+      </nav>
 
+      <div className="project-info">
         <header className="project-header">
           <div className="project-meta-line">
             <span>{project.year}</span>
@@ -960,6 +962,31 @@ export default function Home() {
   const [transitioning, setTransitioning] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const timeoutsRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    const syncViewFromHash = () => {
+      const hash = window.location.hash.slice(1);
+      const projectMatch = hash.match(/^project-(\d+)$/);
+
+      if (projectMatch) {
+        const projectIndex = Number(projectMatch[1]) - 1;
+        if (projectIndex >= 0 && projectIndex < projects.length) {
+          setDetailIndex(projectIndex);
+          return;
+        }
+      }
+
+      const section = sections.find((item) => item.id === hash);
+      if (section) {
+        setDetailIndex(null);
+        setActive(section.id);
+      }
+    };
+
+    syncViewFromHash();
+    window.addEventListener("hashchange", syncViewFromHash);
+    return () => window.removeEventListener("hashchange", syncViewFromHash);
+  }, []);
 
   const clearTimers = useCallback(() => {
     timeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -1067,7 +1094,10 @@ export default function Home() {
         <SideNav active={active} onNavigate={navigate} />
       )}
 
-      <div className="section-stage" key={detailIndex ?? active}>
+      <div
+        className={`section-stage ${detailIndex !== null ? "is-project-detail" : ""}`}
+        key={detailIndex ?? active}
+      >
         {detailIndex === null ? (
           activeContent
         ) : (
