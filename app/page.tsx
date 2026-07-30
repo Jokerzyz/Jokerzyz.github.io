@@ -235,7 +235,7 @@ const homeContent: HomeContent = {
 
 const contactContent = generatedContent.contact;
 
-const curtainColumns = Array.from({ length: 12 }, (_, index) => index);
+const curtainColumns = Array.from({ length: 15 }, (_, index) => index);
 
 function ArtCorridor({ compact = false }: { compact?: boolean }) {
   return (
@@ -634,17 +634,18 @@ function WorkSection({
         }
         aria-hidden="true"
       >
-        <div className="preview-square" />
         <div className="preview-frame">
           <div className="preview-switch" key={hovered}>
             <ProjectPreview project={hoveredProject} index={hovered} />
           </div>
         </div>
         <div className="work-preview-caption">
-          <span>{hoveredProject.category}</span>
+          <span>
+            {hoveredProject.category} / {hoveredProject.year}
+          </span>
           <strong>{hoveredProject.title}</strong>
         </div>
-        <p>{hoveredProject.year} / CLICK TO VIEW</p>
+        <p>CLICK TITLE TO VIEW</p>
       </div>
 
       <div className="work-index">
@@ -907,8 +908,11 @@ function ProjectDetail({
         </nav>
 
         <header className="project-header">
-          <span>{project.year}</span>
-          <p>{project.client}</p>
+          <div className="project-meta-line">
+            <span>{project.year}</span>
+            <i aria-hidden="true" />
+            <p>{project.client}</p>
+          </div>
           <h1>{project.title}</h1>
           <em>{project.subtitle}</em>
         </header>

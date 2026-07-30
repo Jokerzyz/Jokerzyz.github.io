@@ -6,6 +6,11 @@
   --red: #ff1b0a;
   --muted: rgba(245, 243, 237, 0.52);
   --nav-size: 45px;
+  --font-display: Impact, Haettenschweiler, "Arial Narrow Bold",
+    "PingFang SC", sans-serif;
+  --font-sans: "Helvetica Neue", "PingFang SC", "Microsoft YaHei", Arial,
+    sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
 }
 
 * {
@@ -21,8 +26,7 @@ body {
   overflow: hidden;
   background: var(--black);
   color: var(--white);
-  font-family:
-    "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans);
 }
 
 button,
@@ -511,15 +515,16 @@ a {
 
 .work-section {
   display: grid;
-  grid-template-columns: minmax(350px, 0.72fr) minmax(0, 1.28fr);
-  gap: clamp(24px, 3.4vw, 64px);
-  padding-right: clamp(24px, 4vw, 72px);
+  grid-template-columns: minmax(390px, 0.86fr) minmax(0, 1.14fr);
+  gap: 0;
+  padding: 0;
 }
 
 .work-browser {
   display: flex;
   min-height: 0;
   flex-direction: column;
+  padding: 16px clamp(22px, 2.4vw, 42px) 16px 16px;
 }
 
 .work-list-head {
@@ -558,7 +563,7 @@ a {
   grid-template-columns: 34px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  min-height: clamp(64px, 9.2vh, 92px);
+  min-height: clamp(68px, 9.7vh, 98px);
   padding: 7px 4px 7px 0;
   color: var(--white);
   text-align: left;
@@ -594,10 +599,11 @@ a {
 
 .work-title-copy strong {
   overflow: hidden;
-  font-size: clamp(25px, 2.25vw, 45px);
-  font-weight: 900;
-  letter-spacing: -0.055em;
-  line-height: 0.95;
+  font-family: var(--font-display);
+  font-size: clamp(29px, 2.65vw, 54px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.9;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -639,11 +645,13 @@ a {
   position: relative;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
+  background: var(--surface);
 }
 
 .preview-frame {
   position: absolute;
-  inset: clamp(5vh, 8vh, 92px) 0 clamp(11vh, 15vh, 150px) 36px;
+  inset: 0;
   overflow: hidden;
   background: var(--surface);
 }
@@ -651,35 +659,30 @@ a {
 .preview-switch {
   position: absolute;
   inset: 0;
-  animation: preview-switch-in 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: preview-switch-in 1.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: clip-path, opacity, transform;
 }
 
 .preview-media {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-}
-
-.preview-square {
-  position: absolute;
-  z-index: 5;
-  bottom: clamp(11vh, 15vh, 150px);
-  left: 0;
-  width: 36px;
-  height: 36px;
-  background: var(--accent);
-  animation: preview-blink 0.13s 3;
+  object-fit: cover;
+  object-position: center;
 }
 
 .work-preview-caption {
   position: absolute;
+  z-index: 6;
   right: 0;
-  bottom: clamp(5vh, 7vh, 72px);
-  left: 36px;
+  bottom: 0;
+  left: 0;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 20px;
+  padding: clamp(50px, 8vh, 96px) clamp(18px, 2vw, 34px)
+    clamp(18px, 2vw, 34px);
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.82));
 }
 
 .work-preview-caption span {
@@ -691,10 +694,11 @@ a {
 
 .work-preview-caption strong {
   overflow: hidden;
-  font-size: clamp(24px, 2.5vw, 48px);
-  font-weight: 900;
-  letter-spacing: -0.055em;
-  line-height: 0.92;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.3vw, 66px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.88;
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -702,10 +706,13 @@ a {
 
 .work-preview > p {
   position: absolute;
+  z-index: 8;
+  top: 18px;
   right: 0;
-  bottom: 0;
+  bottom: auto;
   margin: 0;
-  color: var(--muted);
+  padding: 0 20px;
+  color: rgba(255, 255, 255, 0.72);
   font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: 0.12em;
 }
@@ -1176,7 +1183,7 @@ a {
 
 .project-detail {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(390px, 0.94fr) minmax(0, 1.06fr);
   overflow: hidden;
   background: #050505;
   text-transform: uppercase;
@@ -1184,11 +1191,11 @@ a {
 
 .project-info {
   position: relative;
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px;
+  grid-template-rows: auto auto 1fr auto;
+  align-items: start;
+  padding: clamp(16px, 1.8vw, 30px);
 }
 
 .project-info > * {
@@ -1222,8 +1229,8 @@ a {
 .project-nav button {
   position: relative;
   color: var(--white);
-  font-size: 12px;
-  font-weight: 700;
+  font: 650 10px/1 var(--font-mono);
+  letter-spacing: 0.08em;
 }
 
 .project-nav button:hover,
@@ -1234,65 +1241,81 @@ a {
 
 .project-header {
   width: 100%;
-  margin-top: 7vh;
+  margin-top: clamp(56px, 8vh, 100px);
   text-align: center;
 }
 
-.project-header > span {
-  display: block;
+.project-meta-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
   color: var(--muted);
-  font: 600 10px/1 ui-monospace, monospace;
-  letter-spacing: 0.1em;
+  font: 600 10px/1 var(--font-mono);
+  letter-spacing: 0.12em;
 }
 
-.project-header p {
-  margin: 7px 0 0;
-  font-size: 13px;
-  font-weight: 700;
+.project-meta-line p {
+  margin: 0;
+}
+
+.project-meta-line i {
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
 }
 
 .project-header h1 {
-  margin: 2.6vh 0 0;
-  font-family: "Songti SC", "STSong", serif;
-  font-size: clamp(84px, 10vw, 190px);
-  font-weight: 900;
-  letter-spacing: -0.13em;
-  line-height: 0.92;
+  max-width: 100%;
+  margin: clamp(22px, 3vh, 40px) auto 0;
+  font-family: var(--font-display);
+  font-size: clamp(70px, 8.8vw, 172px);
+  font-weight: 800;
+  letter-spacing: -0.065em;
+  line-height: 0.86;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .project-header em {
   display: block;
-  margin-top: 15px;
+  max-width: 32em;
+  margin: 20px auto 0;
   color: var(--accent);
-  font-size: 12px;
+  font-size: 10px;
   font-style: normal;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  line-height: 1.5;
 }
 
 .project-copy {
-  width: min(440px, 68%);
-  margin-top: 7vh;
+  width: min(500px, 76%);
+  margin: clamp(48px, 7vh, 84px) auto 0;
   text-align: center;
 }
 
 .project-copy > p {
   margin: 0;
-  font-size: clamp(12px, 1vw, 15px);
-  font-weight: 650;
-  letter-spacing: 0.025em;
-  line-height: 1.7;
+  font-size: clamp(12px, 0.86vw, 15px);
+  font-weight: 500;
+  letter-spacing: 0.015em;
+  line-height: 1.85;
 }
 
 .project-copy .project-stack {
-  margin-top: 5vh;
-  color: rgba(255, 255, 255, 0.7);
-  font: 600 10px/1.55 ui-monospace, monospace;
-  letter-spacing: 0.05em;
+  margin-top: clamp(34px, 5vh, 60px);
+  color: rgba(255, 255, 255, 0.68);
+  font: 600 10px/1.75 var(--font-mono);
+  letter-spacing: 0.06em;
 }
 
 .project-stack span {
+  display: block;
+  margin-bottom: 9px;
   color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.14em;
 }
 
 .project-scroll-hint {
@@ -1318,13 +1341,13 @@ a {
 }
 
 .project-gallery {
-  height: calc(100svh - var(--nav-size));
-  align-self: end;
+  height: 100svh;
+  align-self: stretch;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
-  animation: gallery-unmask 1.05s cubic-bezier(0.76, 0, 0.24, 1) both;
+  animation: gallery-unmask 1.42s cubic-bezier(0.16, 1, 0.3, 1) both;
   contain: layout paint;
   will-change: clip-path;
 }
@@ -1353,7 +1376,8 @@ a {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: center;
 }
 
 .scene-content {
@@ -1362,19 +1386,16 @@ a {
   display: grid;
   place-items: inherit;
   opacity: 0;
-  filter: blur(7px);
-  transform: translate3d(0, 9%, 0) scale(1.035);
+  transform: scale(1.085);
   transition:
-    opacity 0.82s 0.12s ease,
-    filter 1s 0.12s ease,
-    transform 1.05s 0.12s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, opacity, filter;
+    opacity 1.08s 0.12s ease,
+    transform 1.72s 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
 }
 
 .visual-scene.is-visible .scene-content {
   opacity: 1;
-  filter: blur(0);
-  transform: translate3d(0, 0, 0) scale(1);
+  transform: scale(1);
 }
 
 .scene-wipe {
@@ -1383,14 +1404,12 @@ a {
   inset: 0;
   background: #050505;
   pointer-events: none;
-  transform: scaleY(1);
-  transform-origin: top;
-  transition: transform 0.88s cubic-bezier(0.76, 0, 0.24, 1);
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 1.08s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
 .visual-scene.is-visible .scene-wipe {
-  transform: scaleY(0);
-  transform-origin: bottom;
+  clip-path: inset(0 0 100% 0);
 }
 
 .visual-meta {
@@ -2006,7 +2025,7 @@ a {
 .next-project-card strong {
   margin-top: 18px;
   color: var(--accent);
-  font-family: "Songti SC", "STSong", serif;
+  font-family: var(--font-display);
   font-size: clamp(58px, 8vw, 140px);
   letter-spacing: -0.12em;
   line-height: 1;
@@ -2033,7 +2052,7 @@ a {
 }
 
 .transition-curtain span {
-  width: calc(100% / 12);
+  width: calc(100% / 15);
   height: 100%;
   background: #000;
   transform: scaleX(0);
@@ -2162,21 +2181,11 @@ a {
   }
 }
 
-@keyframes preview-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.25;
-  }
-}
-
 @keyframes preview-switch-in {
   from {
     opacity: 0;
-    clip-path: inset(100% 0 0);
-    transform: scale(1.06);
+    clip-path: inset(0 0 100% 0);
+    transform: scale(1.085);
   }
   to {
     opacity: 1;
@@ -2277,12 +2286,14 @@ a {
 
 @keyframes gallery-unmask {
   from {
-    clip-path: inset(100% 0 0);
-    transform: translateY(5%);
+    opacity: 0;
+    clip-path: polygon(100% 0, 100% 0, 100% 0, 100% 0);
+    transform: scale(1.045);
   }
   to {
-    clip-path: inset(0);
-    transform: translateY(0);
+    opacity: 1;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    transform: scale(1);
   }
 }
 
@@ -2322,9 +2333,9 @@ a {
   }
 
   .work-section {
-    grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
-    gap: 24px;
-    padding-right: 24px;
+    grid-template-columns: minmax(330px, 0.82fr) minmax(0, 1.18fr);
+    gap: 0;
+    padding: 0;
   }
 
   .work-title-copy strong {
@@ -2451,6 +2462,7 @@ a {
   .work-section {
     display: block;
     overflow-y: auto;
+    padding: 8px;
   }
 
   .work-list {
@@ -2462,6 +2474,7 @@ a {
   .work-browser {
     display: flex;
     overflow-y: auto;
+    padding: 0;
   }
 
   .work-list-head {
@@ -2641,7 +2654,7 @@ a {
   }
 
   .project-header h1 {
-    font-size: 22vw;
+    font-size: 20vw;
   }
 
   .project-copy {
