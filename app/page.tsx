@@ -219,6 +219,21 @@ const projects: Project[] = generatedProjects.length
     }))
   : defaultProjects;
 
+const projectDisplayTitles = [
+  "ZYRON AI",
+  "MESHY",
+  "PC-148",
+  "CHARACTER",
+  "CUBE",
+  "ITOKEN",
+  "OLYMPIC",
+  "PRODUCT CGI",
+  "AUTO CGI",
+];
+
+const getProjectDisplayTitle = (project: Project, index: number) =>
+  projectDisplayTitles[index] || project.title.toUpperCase();
+
 const aboutSteps: Experience[] = generatedExperiences.length
   ? generatedExperiences
   : defaultAboutSteps;
@@ -583,6 +598,168 @@ function ProjectPreview({ project, index }: { project: Project; index: number })
   );
 }
 
+function KineticWorkList({
+  active,
+  onHover,
+  onOpen,
+}: {
+  active: number;
+  onHover: (index: number) => void;
+  onOpen: (index: number) => void;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const titleRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    let frame = 0;
+    let currentPosition = 0;
+    let lerpedPosition = 0;
+    let velocity = 0;
+    let targetVelocity = 0;
+    let lastInputAt = 0;
+    let touchY: number | null = null;
+    let isDesktop = window.innerWidth > 820;
+    let didMarkReady = false;
+
+    const markReady = () => {
+      if (didMarkReady) return;
+      didMarkReady = true;
+      setReady(true);
+    };
+
+    const clearMobileTransforms = () => {
+      titleRefs.current.forEach((title) => {
+        if (!title) return;
+        title.style.removeProperty("height");
+        title.style.removeProperty("transform");
+      });
+    };
+
+    const render = (now: number) => {
+      isDesktop = window.innerWidth > 820;
+      if (!isDesktop) {
+        clearMobileTransforms();
+        markReady();
+        frame = window.requestAnimationFrame(render);
+        return;
+      }
+
+      const viewportHeight = list.clientHeight || window.innerHeight;
+      const rowHeight = window.innerWidth * 0.09;
+      const totalHeight = Math.max(rowHeight, rowHeight * projects.length);
+
+      lerpedPosition += (currentPosition - lerpedPosition) * 0.05;
+      if (now - lastInputAt > 5) {
+        targetVelocity += (0 - targetVelocity) * 0.05;
+      }
+      velocity += (targetVelocity - velocity) * 0.05;
+
+      titleRefs.current.forEach((title, index) => {
+        if (!title) return;
+
+        let y = index * rowHeight - lerpedPosition;
+        y = ((y + rowHeight) % totalHeight + totalHeight) % totalHeight - rowHeight;
+
+        const nominalCenter = y + rowHeight / 2;
+        const worldY = viewportHeight / 2 - nominalCenter;
+        const curve = Math.max(
+          0,
+          Math.sin((worldY / viewportHeight) * Math.PI + Math.PI / 2),
+        );
+        const stretch =
+          1 + curve * Math.min(Math.abs(velocity) * 0.009 * 2.4, 2.7);
+        const adjustedCenter = viewportHeight / 2 - worldY * stretch;
+        const adjustedTop = adjustedCenter - rowHeight / 2;
+
+        title.style.height = `${rowHeight}px`;
+        title.style.transform =
+          `translate3d(0, ${adjustedTop}px, 0) scaleY(${stretch})`;
+      });
+
+      markReady();
+      frame = window.requestAnimationFrame(render);
+    };
+
+    const addDelta = (delta: number) => {
+      if (!isDesktop) return;
+      currentPosition += delta * 0.4;
+      targetVelocity = delta;
+      lastInputAt = performance.now();
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      if (
+        !isDesktop ||
+        event.ctrlKey ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      addDelta(event.deltaY);
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      touchY = event.touches[0]?.clientY ?? null;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!isDesktop || touchY === null || !event.touches[0]) return;
+      event.preventDefault();
+      const nextY = event.touches[0].clientY;
+      addDelta((touchY - nextY) * 5);
+      touchY = nextY;
+    };
+
+    const handleResize = () => {
+      isDesktop = window.innerWidth > 820;
+      if (!isDesktop) clearMobileTransforms();
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("resize", handleResize);
+    frame = window.requestAnimationFrame(render);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={listRef}
+      className={`work-list kinetic-work-list ${ready ? "is-ready" : ""}`}
+    >
+      {projects.map((project, index) => (
+        <button
+          ref={(node) => {
+            titleRefs.current[index] = node;
+          }}
+          type="button"
+          className={`kinetic-work-title ${active === index ? "is-current" : ""}`}
+          key={project.title}
+          onMouseEnter={() => onHover(index)}
+          onFocus={() => onHover(index)}
+          onClick={() => onOpen(index)}
+          aria-label={`${project.title}，查看项目`}
+        >
+          {getProjectDisplayTitle(project, index)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function WorkSection({
   onOpenProject,
 }: {
@@ -594,34 +771,11 @@ function WorkSection({
   return (
     <section className="main-section work-section" aria-label="作品">
       <div className="work-browser">
-        <div className="work-list-head">
-          <span>SELECTED WORK</span>
-          <strong>{String(projects.length).padStart(2, "0")} PROJECTS</strong>
-        </div>
-
-        <div className="work-list">
-          {projects.map((project, index) => (
-            <button
-              type="button"
-              className={`work-title ${hovered === index ? "is-current" : ""}`}
-              key={project.title}
-              onMouseEnter={() => setHovered(index)}
-              onFocus={() => setHovered(index)}
-              onClick={() => onOpenProject(index)}
-            >
-              <i className="work-title-number">
-                {String(index + 1).padStart(2, "0")}
-              </i>
-              <span className="work-title-copy">
-                <strong>{project.title}</strong>
-                <small>
-                  {project.category} / {project.client}
-                </small>
-              </span>
-              <b>VIEW</b>
-            </button>
-          ))}
-        </div>
+        <KineticWorkList
+          active={hovered}
+          onHover={setHovered}
+          onOpen={onOpenProject}
+        />
       </div>
 
       <div
@@ -639,13 +793,6 @@ function WorkSection({
             <ProjectPreview project={hoveredProject} index={hovered} />
           </div>
         </div>
-        <div className="work-preview-caption">
-          <span>
-            {hoveredProject.category} / {hoveredProject.year}
-          </span>
-          <strong>{hoveredProject.title}</strong>
-        </div>
-        <p>CLICK TITLE TO VIEW</p>
       </div>
 
       <div className="work-index">
@@ -799,6 +946,82 @@ function ContactSection() {
   );
 }
 
+function AnimatedCharacterText({
+  text,
+  charClass,
+  className = "",
+}: {
+  text: string;
+  charClass: string;
+  className?: string;
+}) {
+  const characters = Array.from(text);
+
+  return (
+    <span className={`animated-character-text ${className}`} aria-label={text}>
+      {characters.map((character, index) => (
+        <span
+          className="project-character-mask"
+          aria-hidden="true"
+          key={`${character}-${index}`}
+          style={
+            {
+              "--char-index": index,
+              "--char-reverse-index": characters.length - index - 1,
+              "--char-center-distance": Math.abs(
+                index - (characters.length - 1) / 2,
+              ),
+              "--meta-delay": `${
+                680 + Math.abs(index - (characters.length - 1) / 2) * 5
+              }ms`,
+              "--copy-delay": `${680 + index * 10}ms`,
+              "--stack-delay": `${
+                980 + Math.abs(index - (characters.length - 1) / 2) * 5
+              }ms`,
+            } as CSSProperties
+          }
+        >
+          <span className={charClass}>
+            {character === " " ? "\u00a0" : character}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function AnimatedProjectTitle({ text }: { text: string }) {
+  const characters = Array.from(text);
+
+  return (
+    <span className="project-title-characters" aria-label={text}>
+      {characters.map((character, index) => (
+        <span
+          className="project-title-mask"
+          aria-hidden="true"
+          key={`${character}-${index}`}
+          style={
+            {
+              "--char-index": index,
+              "--char-reverse-index": characters.length - index - 1,
+              "--title-shift-delay": `${180 + index * 20}ms`,
+              "--title-stretch-delay": `${
+                180 + (characters.length - index - 1) * 30
+              }ms`,
+            } as CSSProperties
+          }
+        >
+          <span className="project-title-shift">
+            <span className="project-title-stretch">
+              {character === " " ? "\u00a0" : character}
+            </span>
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function ProjectDetail({
   index,
   onClose,
@@ -814,6 +1037,7 @@ function ProjectDetail({
   const targetScrollRef = useRef(0);
   const scrollFrameRef = useRef<number | null>(null);
   const project = projects[index];
+  const displayTitle = getProjectDisplayTitle(project, index);
 
   const animateScroll = useCallback(function scrollStep() {
     const gallery = galleryRef.current;
@@ -900,10 +1124,10 @@ function ProjectDetail({
     >
       <nav className="project-nav" aria-label="项目导航">
         <div className="project-nav-controls">
-          <button type="button" onClick={onClose}>关闭</button>
+          <button type="button" onClick={onClose}>CLOSE</button>
           <div className="project-nav-pager">
-            <button type="button" onClick={() => onChange(-1)}>上一个</button>
-            <button type="button" onClick={() => onChange(1)}>下一个</button>
+            <button type="button" onClick={() => onChange(-1)}>PREV</button>
+            <button type="button" onClick={() => onChange(1)}>NEXT</button>
           </div>
         </div>
       </nav>
@@ -911,18 +1135,37 @@ function ProjectDetail({
       <div className="project-info">
         <header className="project-header">
           <div className="project-meta-line">
-            <span>{project.year}</span>
-            <i aria-hidden="true" />
-            <p>{project.client}</p>
+            <AnimatedCharacterText
+              text={project.year}
+              charClass="project-meta-character"
+              className="project-date"
+            />
+            <AnimatedCharacterText
+              text={project.client}
+              charClass="project-meta-character"
+              className="project-client"
+            />
           </div>
-          <h1>{project.title}</h1>
-          <em>{project.subtitle}</em>
+          <h1><AnimatedProjectTitle text={displayTitle} /></h1>
         </header>
 
         <div className="project-copy">
-          <p>{project.description}</p>
+          <p className="project-description">
+            <AnimatedCharacterText
+              text={project.description}
+              charClass="project-copy-character"
+            />
+          </p>
           <p className="project-stack">
-            <span>项目能力：</span>{project.stack}
+            <AnimatedCharacterText
+              text="项目能力："
+              charClass="project-stack-character"
+              className="project-stack-label"
+            />
+            <AnimatedCharacterText
+              text={project.stack}
+              charClass="project-stack-character"
+            />
           </p>
         </div>
 
@@ -948,7 +1191,12 @@ function ProjectDetail({
           onClick={() => onChange(1)}
         >
           <span>下一个项目</span>
-          <strong>{projects[(index + 1) % projects.length].title}</strong>
+          <strong>
+            {getProjectDisplayTitle(
+              projects[(index + 1) % projects.length],
+              (index + 1) % projects.length,
+            )}
+          </strong>
           <i>→</i>
         </button>
       </div>
