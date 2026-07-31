@@ -488,20 +488,6 @@ export const generatedContent = {
   ],
   "experiences": [
     {
-      "order": 1,
-      "date": "2016.07-2019.02",
-      "label": "3D资产系统",
-      "company": "北京京乐网络技术有限公司",
-      "role": "3D设计｜内容运营",
-      "title": "把模型、材质与渲染流程沉淀成系统",
-      "copy": "统筹模型组进度并开发企业级PBR材质库与模型库，沉淀1000+资产，支持云渲染平台生产效率提升40%；推动V-Ray渲染器与前端系统集成，使设计与开发协作周期缩短50%。",
-      "mediaKind": "edit",
-      "mediaLabel": "3D ASSET SYSTEM / 2016—2019",
-      "video": "",
-      "poster": "",
-      "image": ""
-    },
-    {
       "order": 2,
       "date": "2019.10-2021.02",
       "label": "冬奥产品",
@@ -532,14 +518,14 @@ export const generatedContent = {
     {
       "order": 4,
       "date": "2022.08-2023.03",
-      "label": "3D产品交付",
+      "label": "",
       "company": "圻域之镜",
       "role": "美术主管｜视觉呈现",
-      "title": "从3D资产到链上产品交付",
-      "copy": "主导“小云人”NFT系列开发，完成3D资产从概念到上链的全流程交付，项目3个月内上线，交易总额达230万元、手续费收入20万元；搭建Unity与Unreal Engine 5美术管线规范，并设计科幻IP“PC138”虚拟人及200+组件运营素材库。",
+      "title": "虚拟人/NFT/动捕相关工作经历",
+      "copy": "主导“小云人”NFT系列开发，完成3D资产从概念到上链的全流程交付，虚拟人设计到动捕全流程；搭建Unity与Unreal Engine 5美术管线规范",
       "mediaKind": "edit",
       "mediaLabel": "3D PRODUCT DELIVERY / 2022—2023",
-      "video": "",
+      "video": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E7%BB%8F%E5%8E%86/2022.08-2023.03/%E8%A7%86%E9%A2%91.m4v",
       "poster": "",
       "image": ""
     },

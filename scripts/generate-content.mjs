@@ -30,6 +30,14 @@ async function readText(directory, filename, fallback = "") {
   }
 }
 
+async function readTextAllowEmpty(directory, filename, fallback = "") {
+  try {
+    return (await fs.readFile(path.join(directory, filename), "utf8")).trim();
+  } catch {
+    return fallback;
+  }
+}
+
 async function listDirectories(directory) {
   if (!(await exists(directory))) return [];
   const entries = await fs.readdir(directory, { withFileTypes: true });
@@ -149,7 +157,7 @@ async function readExperiences() {
       return {
         order: await readOrder(directory, Number.parseFloat(name) || index + 1),
         date: name,
-        label: await readText(directory, "时间线名称.txt", "工作经历"),
+        label: await readTextAllowEmpty(directory, "时间线名称.txt", "工作经历"),
         company: await readText(directory, "公司.txt", "公司名称"),
         role: await readText(directory, "职位.txt", "视觉设计"),
         title: await readText(directory, "标题.txt", "这一阶段的经历"),
