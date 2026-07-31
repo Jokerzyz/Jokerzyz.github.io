@@ -650,7 +650,9 @@ function KineticWorkList({
 
       const viewportHeight = list.clientHeight || window.innerHeight;
       const rowHeight = window.innerWidth * 0.09;
-      const totalHeight = Math.max(rowHeight, rowHeight * projects.length);
+      const rowGap = Math.max(6, rowHeight * 0.08);
+      const rowStride = rowHeight + rowGap;
+      const totalHeight = Math.max(rowStride, rowStride * projects.length);
 
       lerpedPosition += (currentPosition - lerpedPosition) * 0.05;
       if (now - lastInputAt > 5) {
@@ -658,26 +660,41 @@ function KineticWorkList({
       }
       velocity += (targetVelocity - velocity) * 0.05;
 
+      const distortion = Math.min(
+        Math.abs(velocity) * 0.009 * 2.4,
+        2.7,
+      );
+      const viewportCenter = viewportHeight / 2;
+      const warpY = (sourceY: number) => {
+        const centeredY = Math.max(
+          -viewportCenter,
+          Math.min(viewportCenter, sourceY - viewportCenter),
+        );
+
+        return (
+          sourceY +
+          distortion *
+            (viewportHeight / Math.PI) *
+            Math.sin((centeredY / viewportHeight) * Math.PI)
+        );
+      };
+
       titleRefs.current.forEach((title, index) => {
         if (!title) return;
 
-        let y = index * rowHeight - lerpedPosition;
-        y = ((y + rowHeight) % totalHeight + totalHeight) % totalHeight - rowHeight;
+        let y = index * rowStride - lerpedPosition;
+        y = ((y + rowStride) % totalHeight + totalHeight) % totalHeight - rowStride;
 
-        const nominalCenter = y + rowHeight / 2;
-        const worldY = viewportHeight / 2 - nominalCenter;
-        const curve = Math.max(
-          0,
-          Math.sin((worldY / viewportHeight) * Math.PI + Math.PI / 2),
+        const warpedTop = warpY(y);
+        const warpedBottom = warpY(y + rowHeight);
+        const stretch = Math.max(
+          1,
+          (warpedBottom - warpedTop) / rowHeight,
         );
-        const stretch =
-          1 + curve * Math.min(Math.abs(velocity) * 0.009 * 2.4, 2.7);
-        const adjustedCenter = viewportHeight / 2 - worldY * stretch;
-        const adjustedTop = adjustedCenter - rowHeight / 2;
 
         title.style.height = `${rowHeight}px`;
         title.style.transform =
-          `translate3d(0, ${adjustedTop}px, 0) scaleY(${stretch})`;
+          `translate3d(0, ${warpedTop}px, 0) scaleY(${stretch})`;
       });
 
       markReady();

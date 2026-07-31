@@ -575,7 +575,7 @@ a {
   line-height: 1;
   text-align: left;
   text-transform: uppercase;
-  transform-origin: left center;
+  transform-origin: left top;
   white-space: nowrap;
   will-change: transform;
   -webkit-font-smoothing: antialiased;
