@@ -162,13 +162,17 @@ a {
 }
 
 .home-section {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
+  padding-left: 0;
 }
 
 .home-visual {
   position: relative;
+  width: 100%;
+  height: 100px;
+  flex: 1 1;
   min-height: 0;
   overflow: hidden;
   background: #0b0b0b;
@@ -187,27 +191,34 @@ a {
 
 .home-title {
   position: relative;
-  min-height: clamp(175px, 25vh, 310px);
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
   text-align: right;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .home-title p {
-  margin: 0 1.5vw -0.2vw 0;
+  margin: 0 0 8px;
   color: var(--red);
-  font-size: clamp(16px, 2.15vw, 42px);
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  font-family: var(--font-interface);
+  font-size: 3vw;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
 }
 
 .home-title h1 {
   margin: 0;
   color: var(--red);
   font-family: var(--font-display);
-  font-size: clamp(80px, 13.2vw, 260px);
-  font-stretch: condensed;
-  font-weight: 900;
-  letter-spacing: -0.055em;
-  line-height: 0.79;
+  font-size: 13vw;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 0.9;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -2373,7 +2384,7 @@ a {
 
 @media (max-width: 1100px) {
   .home-title h1 {
-    font-size: 12.6vw;
+    font-size: 13vw;
   }
 
   .work-section {
@@ -2437,12 +2448,13 @@ a {
   }
 
   .home-section {
-    grid-template-rows: minmax(0, 1fr) 27%;
     gap: 8px;
+    padding-left: 8px;
   }
 
   .home-title {
-    min-height: 0;
+    flex: 0 0 27%;
+    align-items: flex-start;
   }
 
   .home-title p {

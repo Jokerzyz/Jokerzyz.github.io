@@ -2,7 +2,7 @@
 export const generatedContent = {
   "home": {
     "name": "ZHENYUAN ZHANG",
-    "role": "资深视觉动效设计师 / AI视觉工作流与创意技术",
+    "role": "3D / AI VISUAL DESIGNER",
     "intro": "近10年视觉设计、3D与动态内容经验，近年来持续深耕生成式AI与创意生产革新。曾在Meshy围绕生成式3D产品开展全球品牌传播、AI内容管线与用户教育；现于HTX推动AI视觉生产从单点创作升级为团队级自动化能力。兼具视觉判断、技术整合与产品化思维，能够把新兴AI能力转化为稳定、可复用并服务业务增长的内容生产体系。",
     "edition": "PORTFOLIO / 2026",
     "photo": "",
