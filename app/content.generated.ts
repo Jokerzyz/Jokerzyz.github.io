@@ -574,6 +574,7 @@ export const generatedContent = {
   ],
   "contact": {
     "email": "zhangzhenyuan429@163.com",
+    "wechat": "",
     "xiaohongshu": "",
     "linkedin": "",
     "note": "AI视觉、动态影像与创意技术合作，欢迎联系"

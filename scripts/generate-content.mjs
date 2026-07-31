@@ -183,6 +183,7 @@ async function readContact() {
   const directory = path.join(contentRoot, "联系");
   return {
     email: await readText(directory, "邮箱.txt"),
+    wechat: await readText(directory, "微信.txt"),
     xiaohongshu: await readText(directory, "小红书.txt"),
     linkedin: await readText(directory, "领英.txt"),
     note: await readText(directory, "说明.txt", "有合适的项目，欢迎联系"),

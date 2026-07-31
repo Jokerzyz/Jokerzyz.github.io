@@ -73,10 +73,10 @@ type HomeContent = {
 };
 
 const sections: Array<{ id: SectionName; label: string }> = [
-  { id: "home", label: "首页" },
-  { id: "work", label: "作品" },
-  { id: "about", label: "经历" },
-  { id: "contact", label: "联系" },
+  { id: "home", label: "HOME" },
+  { id: "work", label: "WORK" },
+  { id: "about", label: "ABOUT" },
+  { id: "contact", label: "CONTACT" },
 ];
 
 const defaultProjects: Project[] = [
@@ -821,14 +821,159 @@ function WorkSection({
   );
 }
 
-function ExperienceMedia({ experience }: { experience: Experience }) {
+function MaskedExperienceMedia({
+  experience,
+  fallbackImage,
+}: {
+  experience: Experience;
+  fallbackImage?: string;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const stillImage = experience.poster || experience.image || fallbackImage;
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    let frame = 0;
+    let startTime = performance.now();
+
+    const drawCover = (
+      source: CanvasImageSource,
+      sourceWidth: number,
+      sourceHeight: number,
+      width: number,
+      height: number,
+      time: number,
+    ) => {
+      if (!sourceWidth || !sourceHeight) return;
+
+      const drift = (Math.sin(time * 0.00032) + 1) / 2;
+      const zoom = 1.04 + drift * 0.055;
+      const scale = Math.max(width / sourceWidth, height / sourceHeight) * zoom;
+      const drawWidth = sourceWidth * scale;
+      const drawHeight = sourceHeight * scale;
+      const travelX = Math.max(0, drawWidth - width);
+      const travelY = Math.max(0, drawHeight - height);
+      const x = -travelX * (0.28 + drift * 0.38);
+      const y = -travelY * (0.35 + (1 - drift) * 0.22);
+
+      context.drawImage(source, x, y, drawWidth, drawHeight);
+    };
+
+    const render = (now: number) => {
+      const bounds = canvas.getBoundingClientRect();
+      const width = Math.max(1, bounds.width);
+      const height = Math.max(1, bounds.height);
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const targetWidth = Math.round(width * pixelRatio);
+      const targetHeight = Math.round(height * pixelRatio);
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      context.clearRect(0, 0, width, height);
+
+      const video = videoRef.current;
+      const image = imageRef.current;
+      const hasVideoFrame = Boolean(
+        video && video.readyState >= 2 && video.videoWidth && video.videoHeight,
+      );
+      const hasImageFrame = Boolean(
+        image && image.complete && image.naturalWidth && image.naturalHeight,
+      );
+
+      if (hasVideoFrame && video) {
+        drawCover(
+          video,
+          video.videoWidth,
+          video.videoHeight,
+          width,
+          height,
+          now - startTime,
+        );
+      } else if (hasImageFrame && image) {
+        drawCover(
+          image,
+          image.naturalWidth,
+          image.naturalHeight,
+          width,
+          height,
+          now - startTime,
+        );
+      } else {
+        const fallbackGradient = context.createLinearGradient(0, 0, width, height);
+        fallbackGradient.addColorStop(0, "#71000f");
+        fallbackGradient.addColorStop(0.5, "#f00612");
+        fallbackGradient.addColorStop(1, "#ff1b0a");
+        context.fillStyle = fallbackGradient;
+        context.fillRect(0, 0, width, height);
+      }
+
+      context.globalCompositeOperation = "screen";
+      const redWash = context.createLinearGradient(0, 0, width, 0);
+      redWash.addColorStop(0, "rgba(150, 0, 18, 0.82)");
+      redWash.addColorStop(0.52, "rgba(255, 0, 10, 0.7)");
+      redWash.addColorStop(1, "rgba(255, 27, 10, 0.9)");
+      context.fillStyle = redWash;
+      context.fillRect(0, 0, width, height);
+
+      context.globalCompositeOperation = "destination-in";
+      const fontSize = height * 1.17;
+      context.font = `400 ${fontSize}px "Anton-Regular"`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      const title = "ZYRON";
+      const measuredWidth = Math.max(1, context.measureText(title).width);
+      const horizontalScale = Math.min(1.12, (width * 0.94) / measuredWidth);
+
+      context.save();
+      context.translate(width / 2, height * 0.5);
+      context.scale(horizontalScale, 1);
+      context.fillStyle = "#fff";
+      context.fillText(title, 0, 0);
+      context.restore();
+      context.globalCompositeOperation = "source-over";
+
+      frame = window.requestAnimationFrame(render);
+    };
+
+    document.fonts
+      .load('400 120px "Anton-Regular"')
+      .finally(() => {
+        startTime = performance.now();
+        window.cancelAnimationFrame(frame);
+        frame = window.requestAnimationFrame(render);
+      });
+
+    frame = window.requestAnimationFrame(render);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [experience, fallbackImage]);
+
   return (
     <div
-      className={`experience-media experience-${experience.mediaKind}`}
+      className={`about-mask-media experience-${experience.mediaKind}`}
       key={experience.date}
     >
-      {experience.video ? (
+      <canvas
+        ref={canvasRef}
+        aria-label={`ZYRON — ${experience.mediaLabel}`}
+      />
+      {experience.video && (
         <video
+          ref={videoRef}
+          className="about-mask-source"
           src={experience.video}
           poster={experience.poster}
           autoPlay
@@ -837,34 +982,18 @@ function ExperienceMedia({ experience }: { experience: Experience }) {
           playsInline
           preload="metadata"
         />
-      ) : experience.image ? (
-        <img
-          className="experience-primary-image"
-          src={experience.image}
-          alt={`${experience.date} ${experience.label}`}
-        />
-      ) : (
-        <div className="experience-reel" aria-hidden="true">
-          <div className="reel-shot reel-shot-one">
-            <span>{experience.date.slice(0, 4)}</span>
-            <strong>{experience.role}</strong>
-          </div>
-          <div className="reel-shot reel-shot-two">
-            <span>SELECTED PROJECT</span>
-            <i />
-          </div>
-          <div className="reel-shot reel-shot-three">
-            <b>{experience.label}</b>
-            <i />
-          </div>
-        </div>
       )}
-      <div className="experience-media-caption">
-        <span>PLAYING</span>
-        <p>{experience.mediaLabel}</p>
-        <b>16:9 / LOOP</b>
-      </div>
-      <div className="experience-scanline" aria-hidden="true" />
+      {stillImage && (
+        <img
+          ref={imageRef}
+          className="about-mask-source"
+          src={stillImage}
+          alt=""
+        />
+      )}
+      <span className="about-mask-status">
+        {experience.video ? "PLAYING" : "SELECTED"} / {experience.mediaLabel}
+      </span>
     </div>
   );
 }
@@ -875,35 +1004,38 @@ function AboutSection() {
 
   return (
     <section className="main-section about-section" aria-label="经历">
-      <div className="about-collabs">
-        <p>能力方向：</p>
-        <span>AI视觉工作流 /</span>
-        <span>3D与动态内容 /</span>
-        <span>全球品牌传播 /</span>
-        <span>创意技术</span>
-      </div>
+      <div className="about-content">
+        <div className="about-collabs">
+          <p>PREVIOUS EXPERIENCE:</p>
+          <div>
+            <span>JINGLE /</span>
+            <span>BEIJING 2022 /</span>
+            <span>HUOBI /</span>
+            <span>QIYU /</span>
+            <span>MESHY /</span>
+            <span>HTX</span>
+          </div>
+        </div>
 
-      <div className="about-center">
-        <ExperienceMedia experience={activeStep} />
+        <MaskedExperienceMedia
+          experience={activeStep}
+          fallbackImage={projects[[7, 6, 4, 2, 1, 0][step] || 0]?.cover}
+        />
         <div
-          className="about-copy"
+          className="about-description"
           key={activeStep.title}
           aria-live="polite"
         >
-          <div>
-            <span>{activeStep.date} — {activeStep.label}</span>
-            <h2>{activeStep.title}</h2>
-          </div>
-          <div className="experience-copy">
-            <p>{activeStep.copy}</p>
-            <span>{activeStep.company}</span>
-            <b>{activeStep.role}</b>
-          </div>
+          <span>
+            {activeStep.date} / {activeStep.company} / {activeStep.role}
+          </span>
+          <h2>{activeStep.title}</h2>
+          <p>{activeStep.copy}</p>
         </div>
       </div>
 
       <div className="about-timeline">
-        <p>切换时间轴查看经历</p>
+        <p>- SELECT A CHAPTER -</p>
         <div
           className="timeline-rail"
           style={{ "--timeline-count": aboutSteps.length } as CSSProperties}
@@ -917,8 +1049,8 @@ function AboutSection() {
               onFocus={() => setStep(index)}
               onClick={() => setStep(index)}
             >
-              <span>{item.label}</span>
               <b>{item.date}</b>
+              <span>{item.label}</span>
             </button>
           ))}
         </div>
@@ -931,34 +1063,27 @@ function ContactSection() {
   const emailHref = contactContent.email
     ? `mailto:${contactContent.email}`
     : "#contact";
+  const wechatHref = contactContent.wechat || "#contact";
 
   return (
     <section className="main-section contact-section" aria-label="联系">
       <div className="contact-wrapper">
-        <p className="contact-kicker">{contactContent.note}</p>
         <h2>
-          <span>与我</span>
-          <span>聊聊</span>
+          <span>MEET ME</span>
         </h2>
         <div className="contact-links">
-          <a href={emailHref} aria-label="发送邮件">邮箱</a>
           <a
-            href={contactContent.xiaohongshu || "#contact"}
-            aria-label="小红书"
+            href={wechatHref}
+            aria-label="WeChat"
+            onClick={(event) => {
+              if (!contactContent.wechat) event.preventDefault();
+            }}
           >
-            小红书
+            WECHAT
           </a>
-          <a
-            href={contactContent.linkedin || "#contact"}
-            aria-label="领英"
-          >
-            领英
-          </a>
+          <a href={emailHref} aria-label="Send email">MAIL</a>
         </div>
       </div>
-      <p className="contact-note">
-        {contactContent.email || "在网站内容/联系中填写真实联系方式"}
-      </p>
     </section>
   );
 }
