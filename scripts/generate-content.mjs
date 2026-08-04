@@ -8,8 +8,12 @@ const contentRoot = path.join(publicRoot, "网站内容");
 const outputFile = path.join(projectRoot, "app", "content.generated.ts");
 
 const imageExtensions = new Set([".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"]);
-const videoExtensions = new Set([".m4v", ".mov", ".mp4", ".webm"]);
+// Prefer web-ready sources when multiple files share the same stem. Original
+// `视频.mp4` files stay beside separately exported `视频压缩.mp4` files without
+// being selected for the public website.
+const videoExtensions = new Set([".mp4", ".webm", ".m4v", ".mov"]);
 const mediaExtensions = new Set([...imageExtensions, ...videoExtensions]);
+const previewModes = new Set(["auto", "contain", "cover"]);
 const accents = ["#ff1b0a", "#2b65ff", "#d8ff36", "#ff5c8a"];
 const surfaces = ["#d9d7d0", "#e9e6dc", "#171717", "#eee8dd"];
 
@@ -58,22 +62,33 @@ function naturalCompare(left, right) {
 
 function publicUrl(filePath) {
   const relative = path.relative(publicRoot, filePath);
-  return `/${relative.split(path.sep).map(encodeURIComponent).join("/")}`;
+  const encodePathSegment = (segment) =>
+    encodeURIComponent(segment).replace(/%3A/gi, ":");
+  return `/${relative.split(path.sep).map(encodePathSegment).join("/")}`;
 }
 
 async function findNamedMedia(directory, stems, extensions = mediaExtensions) {
   const files = await listFiles(directory);
   const loweredStems = stems.map((stem) => stem.toLowerCase());
-  const match = files.find((file) => {
-    const parsed = path.parse(file);
-    return extensions.has(parsed.ext.toLowerCase()) && loweredStems.includes(parsed.name.toLowerCase());
-  });
+  const match = loweredStems.flatMap((stem) =>
+    [...extensions].map((extension) =>
+      files.find((file) => {
+        const parsed = path.parse(file);
+        return parsed.name.toLowerCase() === stem && parsed.ext.toLowerCase() === extension;
+      }),
+    ),
+  ).find(Boolean);
   return match ? publicUrl(path.join(directory, match)) : "";
 }
 
 async function readOrder(directory, fallback) {
   const value = Number.parseFloat(await readText(directory, "排序.txt", String(fallback)));
   return Number.isFinite(value) ? value : fallback;
+}
+
+async function readPreviewMode(directory) {
+  const value = (await readText(directory, "预览方式.txt", "cover")).toLowerCase();
+  return previewModes.has(value) ? value : "cover";
 }
 
 async function readProjectVisuals(projectDirectory) {
@@ -126,6 +141,8 @@ async function readProjects() {
       return {
         order: await readOrder(directory, index + 1),
         title: name,
+        displayTitle:
+          (await readTextAllowEmpty(directory, "展示名称.txt")) || undefined,
         category: await readText(directory, "分类.txt", "精选项目"),
         year: await readText(directory, "年份.txt", "2026"),
         client: await readText(directory, "客户.txt", "个人项目"),
@@ -134,6 +151,7 @@ async function readProjects() {
         stack: await readText(directory, "职责.txt", "VISUAL / MOTION / DESIGN"),
         accent: await readText(directory, "主题色.txt", accents[index % accents.length]),
         surface: await readText(directory, "背景色.txt", surfaces[index % surfaces.length]),
+        previewMode: await readPreviewMode(directory),
         cover,
         visuals,
       };
@@ -164,7 +182,11 @@ async function readExperiences() {
         copy: await readText(directory, "简介.txt", "请在简介.txt中填写这段经历。"),
         mediaKind,
         mediaLabel: await readText(directory, "视频标题.txt", `${name} 项目影像`),
-        video: await findNamedMedia(directory, ["视频", "reel", "showreel"], videoExtensions),
+        video: await findNamedMedia(
+          directory,
+          ["视频压缩", "视频", "reel", "showreel"],
+          videoExtensions,
+        ),
         poster: await findNamedMedia(directory, ["封面", "poster"], imageExtensions),
         image: await findNamedMedia(directory, ["图片", "照片", "image", "photo"], imageExtensions),
       };

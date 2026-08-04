@@ -1,44 +1,38 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import "./globals.css";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("host") ?? "localhost:3000";
-  const protocol = host.includes("localhost") ? "http" : "https";
-  const origin = `${protocol}://${host}`;
-  const title = "ZHENYUAN ZHANG — 中文创意作品集";
-  const description =
-    "一份以全屏转场、动态项目列表和分栏作品详情构成的中文创意作品集。";
+const title = "ZHENYUAN ZHANG — 中文创意作品集";
+const description =
+  "一份以全屏转场、动态项目列表和分栏作品详情构成的中文创意作品集。";
 
-  return {
+export const metadata: Metadata = {
+  metadataBase: new URL("https://zyrondesignz.com"),
+  title,
+  description,
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+  },
+  openGraph: {
     title,
     description,
-    icons: {
-      icon: "/favicon.svg",
-      shortcut: "/favicon.svg",
-    },
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      images: [
-        {
-          url: `${origin}/portfolio-og.png`,
-          width: 1536,
-          height: 1024,
-          alt: "ZHENYUAN ZHANG 中文创意作品集",
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [`${origin}/portfolio-og.png`],
-    },
-  };
-}
+    type: "website",
+    images: [
+      {
+        url: "/portfolio-og.png",
+        width: 1536,
+        height: 1024,
+        alt: "ZHENYUAN ZHANG 中文创意作品集",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/portfolio-og.png"],
+  },
+};
 
 export default function RootLayout({
   children,
@@ -47,6 +41,29 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/Anton-Regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/Inter_Bold.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/网站内容/首页/互动形象/首页粒子角色.mp4"
+          as="video"
+          type="video/mp4"
+          fetchPriority="high"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

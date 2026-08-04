@@ -41,3 +41,7 @@ next-env.d.ts
 /outputs/
 /work/
 /素材原片/
+
+# Keep full-resolution experience masters on the external drive only. The site
+# and GitHub Pages deployment use the separate 视频压缩.mp4 files.
+/public/网站内容/经历/*/视频.mp4
