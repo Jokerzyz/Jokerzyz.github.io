@@ -101,9 +101,7 @@ test("server-renders the portfolio shell and metadata", async () => {
   assert.match(html, /href="#contact"/i);
   assert.match(html, /aria-current="page"/i);
   assert.match(html, /role="status"/i);
-  // layout.tsx intentionally keeps its existing preload contract; the interactive
-  // portrait source itself is asserted below from page.tsx.
-  assert.match(html, /首页粒子角色\.mp4/i);
+  assert.doesNotMatch(html, /首页粒子角色\.mp4/i);
   assert.doesNotMatch(html, /粒子测试-电影工作场景\.png/i);
   assert.doesNotMatch(html, /class="particle-portrait-fallback"/i);
   assert.doesNotMatch(html, /alt="电影化工作场景中的创作者静帧"/i);
@@ -205,6 +203,7 @@ test("home pixel video plays once, holds its last frame, and replays on demand",
   );
 
   assert.match(portraitSource, /src=\{particlePortraitVideoSrc\}/);
+  assert.match(portraitSource, /preload="metadata"/);
   assert.match(portraitSource, /autoPlay=\{!reducedMotion && !suspended\}/);
   assert.match(portraitSource, /onEnded=\{\(\) => setEnded\(true\)\}/);
   assert.match(portraitSource, /if \(!video \|\| !ended\) return/);
@@ -214,6 +213,49 @@ test("home pixel video plays once, holds its last frame, and replays on demand",
   assert.doesNotMatch(
     portraitSource,
     /pointermove|pointerleave|VideoTexture|PlaneGeometry|WebGLRenderer|uTrail/,
+  );
+});
+
+test("media origins rewrite only local site-content URLs", async () => {
+  const { resolveMediaUrl } = await loadPageModule();
+  const localPath = "/网站内容/作品/封面.jpg";
+  const encodedPath =
+    "/%e7%bd%91%e7%ab%99%e5%86%85%e5%ae%b9/%E4%BD%9C%E5%93%81/%E5%B0%81%E9%9D%A2.jpg";
+  const origin = "https://media.example.com///";
+
+  assert.equal(resolveMediaUrl(localPath, ""), localPath);
+  assert.equal(
+    resolveMediaUrl(localPath, origin),
+    "https://media.example.com/网站内容/作品/封面.jpg",
+  );
+  assert.equal(
+    resolveMediaUrl(encodedPath, origin),
+    `https://media.example.com${encodedPath}`,
+  );
+  assert.equal(
+    resolveMediaUrl("/other/封面.jpg", origin),
+    "/other/封面.jpg",
+  );
+  assert.equal(
+    resolveMediaUrl("https://cdn.example.com/封面.jpg", origin),
+    "https://cdn.example.com/封面.jpg",
+  );
+  assert.equal(resolveMediaUrl(undefined, origin), undefined);
+});
+
+test("media-origin deployment wiring avoids the retired preload", async () => {
+  const [layoutSource, workflowSource] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../.github/workflows/deploy-pages.yml", import.meta.url),
+      "utf8",
+    ),
+  ]);
+
+  assert.doesNotMatch(layoutSource, /首页粒子角色\.mp4/);
+  assert.match(
+    workflowSource,
+    /NEXT_PUBLIC_MEDIA_ORIGIN:\s*\$\{\{\s*vars\.MEDIA_ORIGIN\s*\|\|\s*''\s*\}\}/,
   );
 });
 
@@ -589,6 +631,12 @@ test("keeps focus and reduced-motion presentation contracts", async () => {
     /\.pixel-video-stage\[data-video-ready="true"\] \.pixel-video-media\s*\{[\s\S]*?opacity:\s*1;/,
   );
   assert.match(pageSource, /首页像素交互视频\.mp4/);
+  assert.match(pageSource, /configuredMediaOrigin/);
+  assert.match(pageSource, /resolveMediaUrl\(content\.video\)/);
+  assert.match(pageSource, /resolveMediaUrl\(visual\.src\)/);
+  assert.match(pageSource, /resolveMediaUrl\(project\.cover\)/);
+  assert.match(pageSource, /resolveMediaUrl\(experience\.video\)/);
+  assert.match(pageSource, /resolveMediaUrl\("\/网站内容\/联系\/微信二维码\.jpg"\)/);
   const portraitSource = pageSource.slice(
     pageSource.indexOf("function InteractiveParticlePortrait"),
     pageSource.indexOf("function HomeShowreel"),
@@ -613,6 +661,8 @@ test("keeps focus and reduced-motion presentation contracts", async () => {
     aboutMediaSource,
     /if \(experience\.video && !hasVideoFrame\)[\s\S]*?fillStyle = "#000"/,
   );
+  assert.match(aboutMediaSource, /crossOrigin="anonymous"/);
+  assert.match(aboutMediaSource, /preload="metadata"/);
   assert.doesNotMatch(aboutMediaSource, /poster=\{experience\.poster\}/);
   assert.match(pageSource, /<MaskedExperienceMedia[\s\S]*?key=\{activeStep\.date\}/);
   assert.match(pageSource, /data-intro-ready/);

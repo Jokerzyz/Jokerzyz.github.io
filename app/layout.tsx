@@ -56,13 +56,6 @@ export default function RootLayout({
           type="font/woff2"
           crossOrigin="anonymous"
         />
-        <link
-          rel="preload"
-          href="/网站内容/首页/互动形象/首页粒子角色.mp4"
-          as="video"
-          type="video/mp4"
-          fetchPriority="high"
-        />
       </head>
       <body>{children}</body>
     </html>

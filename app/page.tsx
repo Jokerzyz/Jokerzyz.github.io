@@ -323,8 +323,40 @@ const contactContent = generatedContent.contact;
 const curtainColumns = Array.from({ length: 15 }, (_, index) => index);
 const homeTitleSlices = Array.from({ length: 14 }, (_, index) => index);
 const homeRoleSlices = Array.from({ length: 10 }, (_, index) => index);
+const configuredMediaOrigin = (process.env.NEXT_PUBLIC_MEDIA_ORIGIN || "").replace(
+  /\/+$/,
+  "",
+);
+const siteContentPathPrefixes = [
+  "/网站内容/",
+  "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/",
+];
+
+export function resolveMediaUrl(value: string, origin?: string): string;
+export function resolveMediaUrl(value: undefined, origin?: string): undefined;
+export function resolveMediaUrl(
+  value: string | undefined,
+  origin?: string,
+): string | undefined;
+export function resolveMediaUrl(
+  value: string | undefined,
+  origin = configuredMediaOrigin,
+) {
+  const normalizedValue = value?.toLowerCase();
+  if (
+    !value ||
+    !siteContentPathPrefixes.some((prefix) =>
+      normalizedValue?.startsWith(prefix.toLowerCase()),
+    )
+  ) {
+    return value;
+  }
+  const normalizedOrigin = origin.replace(/\/+$/, "");
+  return normalizedOrigin ? `${normalizedOrigin}${value}` : value;
+}
+
 const particlePortraitVideoSrc =
-  "/网站内容/首页/互动形象/首页像素交互视频.mp4";
+  resolveMediaUrl("/网站内容/首页/互动形象/首页像素交互视频.mp4");
 
 type ParticleVisualSettings = {
   imageScale: number;
@@ -1141,7 +1173,8 @@ function ParticleMatrixIntro({
     sourceVideo.muted = true;
     sourceVideo.loop = true;
     sourceVideo.playsInline = true;
-    sourceVideo.preload = "auto";
+    sourceVideo.preload = "metadata";
+    sourceVideo.crossOrigin = "anonymous";
     sourceVideo.addEventListener("loadeddata", handleVideoReady);
     sourceVideo.addEventListener("canplay", handleVideoReady);
     sourceVideo.addEventListener("error", handleVideoError);
@@ -1355,7 +1388,8 @@ export function LegacyInteractiveParticlePortrait({
         sourceVideo.muted = true;
         sourceVideo.loop = true;
         sourceVideo.playsInline = true;
-        sourceVideo.preload = "auto";
+        sourceVideo.preload = "metadata";
+        sourceVideo.crossOrigin = "anonymous";
 
         const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
         const scene = new THREE.Scene();
@@ -1991,7 +2025,7 @@ function InteractiveParticlePortrait({
         autoPlay={!reducedMotion && !suspended}
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
         onLoadedData={() => setReady(true)}
         onPlaying={() => {
           setReady(true);
@@ -2033,8 +2067,8 @@ function HomeShowreel({
         <video
           ref={videoRef}
           className="home-primary-media"
-          src={content.video}
-          poster={content.poster}
+          src={resolveMediaUrl(content.video)}
+          poster={resolveMediaUrl(content.poster)}
           autoPlay={!reducedMotion}
           muted
           loop
@@ -2043,7 +2077,10 @@ function HomeShowreel({
         />
       ) : content.photo ? (
         <div className="home-portrait-layout">
-          <img src={content.photo} alt={`${content.name}个人照片`} />
+          <img
+            src={resolveMediaUrl(content.photo)}
+            alt={`${content.name}个人照片`}
+          />
           <div className="home-portrait-copy">
             <span>PROFILE / INTRO</span>
             <p>{content.intro}</p>
@@ -2134,7 +2171,7 @@ function VisualScene({
         {visual.kind === "image" && (
           <img
             className="project-asset"
-            src={visual.src}
+            src={resolveMediaUrl(visual.src)}
             alt={visual.label}
             loading={index < 2 ? "eager" : "lazy"}
           />
@@ -2144,8 +2181,8 @@ function VisualScene({
           <video
             ref={videoRef}
             className="project-asset"
-            src={visual.src}
-            poster={visual.poster}
+            src={resolveMediaUrl(visual.src)}
+            poster={resolveMediaUrl(visual.poster)}
             autoPlay={!reducedMotion}
             muted
             loop
@@ -2417,7 +2454,7 @@ function ProjectPreview({
     return (
       <img
         className={previewClassName}
-        src={project.cover}
+        src={resolveMediaUrl(project.cover)}
         alt=""
         loading="eager"
         decoding="async"
@@ -2435,7 +2472,7 @@ function ProjectPreview({
     return (
       <img
         className={previewClassName}
-        src={firstMedia.src}
+        src={resolveMediaUrl(firstMedia.src)}
         alt=""
         loading="eager"
         decoding="async"
@@ -2454,8 +2491,8 @@ function ProjectPreview({
       <video
         ref={videoRef}
         className={previewClassName}
-        src={firstMedia.src}
-        poster={firstMedia.poster}
+        src={resolveMediaUrl(firstMedia.src)}
+        poster={resolveMediaUrl(firstMedia.poster)}
         autoPlay={!reducedMotion}
         muted
         loop
@@ -3033,19 +3070,21 @@ function MaskedExperienceMedia({
           key={experience.date}
           ref={videoRef}
           className="about-mask-source"
-          src={experience.video}
+          src={resolveMediaUrl(experience.video)}
+          crossOrigin="anonymous"
           autoPlay={!reducedMotion}
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
         />
       )}
       {stillImage && (
         <img
           ref={imageRef}
           className="about-mask-source"
-          src={stillImage}
+          src={resolveMediaUrl(stillImage)}
+          crossOrigin="anonymous"
           alt=""
         />
       )}
@@ -3189,7 +3228,7 @@ function ContactSection() {
               {activeContact === "wechat" ? (
                 <img
                   className="contact-wechat-card"
-                  src="/网站内容/联系/微信二维码.jpg"
+                  src={resolveMediaUrl("/网站内容/联系/微信二维码.jpg")}
                   alt="微信二维码"
                   width={888}
                   height={1131}
