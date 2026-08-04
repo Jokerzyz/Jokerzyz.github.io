@@ -275,26 +275,6 @@ export const generatedContent = {
       "visuals": [
         {
           "kind": "image",
-          "label": "龙骑女孩项目封面",
-          "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/05.jpg"
-        },
-        {
-          "kind": "image",
-          "label": "二维设定与三维呈现",
-          "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/06.jpg"
-        },
-        {
-          "kind": "image",
-          "label": "多视角角色展示",
-          "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/07.jpg"
-        },
-        {
-          "kind": "image",
-          "label": "双角色组合",
-          "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/08.jpg"
-        },
-        {
-          "kind": "image",
           "label": "11",
           "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/11.jpg"
         },
@@ -317,6 +297,26 @@ export const generatedContent = {
           "kind": "image",
           "label": "15",
           "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/15.jpg"
+        },
+        {
+          "kind": "image",
+          "label": "16",
+          "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/16.jpg"
+        },
+        {
+          "kind": "image",
+          "label": "17",
+          "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/17.jpg"
+        },
+        {
+          "kind": "image",
+          "label": "18",
+          "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/18.jpg"
+        },
+        {
+          "kind": "image",
+          "label": "19",
+          "src": "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/%E4%BD%9C%E5%93%81/3D:IP%20%E8%A7%92%E8%89%B2/%E5%86%85%E5%AE%B9/19.jpg"
         }
       ]
     },
