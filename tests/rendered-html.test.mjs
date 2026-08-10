@@ -203,7 +203,7 @@ test("home pixel video plays once, holds its last frame, and replays on demand",
   );
 
   assert.match(portraitSource, /src=\{particlePortraitVideoSrc\}/);
-  assert.match(portraitSource, /preload="metadata"/);
+  assert.match(portraitSource, /preload="auto"/);
   assert.match(portraitSource, /autoPlay=\{!reducedMotion && !suspended\}/);
   assert.match(portraitSource, /onEnded=\{\(\) => setEnded\(true\)\}/);
   assert.match(portraitSource, /if \(!video \|\| !ended\) return/);
@@ -634,7 +634,7 @@ test("keeps focus and reduced-motion presentation contracts", async () => {
   assert.match(pageSource, /configuredMediaOrigin/);
   assert.match(pageSource, /resolveMediaUrl\(content\.video\)/);
   assert.match(pageSource, /resolveMediaUrl\(visual\.src\)/);
-  assert.match(pageSource, /resolveMediaUrl\(project\.cover\)/);
+  assert.match(pageSource, /resolveMediaUrl\(imageSource\)/);
   assert.match(pageSource, /resolveMediaUrl\(experience\.video\)/);
   assert.match(pageSource, /resolveMediaUrl\("\/网站内容\/联系\/微信二维码\.jpg"\)/);
   const portraitSource = pageSource.slice(
@@ -659,12 +659,16 @@ test("keeps focus and reduced-motion presentation contracts", async () => {
   );
   assert.match(
     aboutMediaSource,
-    /if \(experience\.video && !hasVideoFrame\)[\s\S]*?fillStyle = "#000"/,
+    /!hasVideoFrame[\s\S]*?hasPaintedFrameRef\.current[\s\S]*?return;/,
   );
+  assert.doesNotMatch(aboutMediaSource, /fillStyle = "#000"/);
   assert.match(aboutMediaSource, /crossOrigin="anonymous"/);
-  assert.match(aboutMediaSource, /preload="metadata"/);
+  assert.match(aboutMediaSource, /preload="auto"/);
   assert.doesNotMatch(aboutMediaSource, /poster=\{experience\.poster\}/);
-  assert.match(pageSource, /<MaskedExperienceMedia[\s\S]*?key=\{activeStep\.date\}/);
+  assert.doesNotMatch(pageSource, /<MaskedExperienceMedia[\s\S]*?key=\{activeStep\.date\}/);
+  assert.doesNotMatch(aboutMediaSource, /key=\{experience\.date\}/);
+  assert.match(css, /\.about-description-meta\s*\{[\s\S]*?display:\s*grid;/);
+  assert.match(css, /\.about-description p\s*\{[\s\S]*?min-height:/);
   assert.match(pageSource, /data-intro-ready/);
   assert.match(pageSource, /const homeTitleSlices = Array\.from\(\{ length: 14 \}/);
   assert.match(pageSource, /const homeRoleSlices = Array\.from\(\{ length: 10 \}/);
@@ -680,7 +684,15 @@ test("keeps focus and reduced-motion presentation contracts", async () => {
   assert.match(css, /@keyframes intro-role-copy-settle[\s\S]*letter-spacing:\s*0;/);
   assert.match(css, /@keyframes intro-name-copy-settle[\s\S]*letter-spacing:\s*-0\.025em;/);
   assert.doesNotMatch(css, /intro-semantic-title-settle/);
-  assert.match(css, /\.site-shell\.is-loaded \.intro-title-assembly\s*\{[\s\S]*visibility:\s*hidden;/);
+  assert.match(css, /\.site-shell\.is-loaded \.intro-title-assembly\s*\{[\s\S]*visibility:\s*visible;/);
+  assert.match(
+    css,
+    /\.site-shell\.is-loaded \.home-title-role,[\s\S]*?\.home-title-name\s*\{[\s\S]*?opacity:\s*0;/,
+  );
+  assert.match(portraitSource, /preload="auto"/);
+  assert.match(css, /\.work-preview\s*\{[\s\S]*?background:\s*#000;/);
+  assert.match(css, /\.preview-media\.is-media-ready\s*\{[\s\S]*?opacity:\s*1;/);
+  assert.match(pageSource, /onError=\{\(\) => \{[\s\S]*?setImageSource\(firstImage\)/);
   assert.match(pageSource, /--slice-delay/);
   assert.match(pageSource, /collectSamplePoints/);
   assert.match(pageSource, /particle\.targetX\s*\+=\s*\(target\.x - particle\.targetX\) \* targetLerp/);

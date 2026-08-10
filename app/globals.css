@@ -344,12 +344,12 @@ a {
 
 .site-shell.is-loaded .home-title-role,
 .site-shell.is-loaded .home-title-name {
-  opacity: 1;
+  opacity: 0;
   animation: none;
 }
 
 .site-shell.is-loaded .intro-title-assembly {
-  visibility: hidden;
+  visibility: visible;
 }
 
 .site-shell:not(.is-intro-revealing) .home-title-role,
@@ -999,14 +999,14 @@ a {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: var(--surface);
+  background: #000;
 }
 
 .preview-frame {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: var(--surface);
+  background: #000;
 }
 
 .preview-switch {
@@ -1025,15 +1025,22 @@ a {
 .preview-media {
   width: 100%;
   height: 100%;
+  background: #000;
   object-fit: cover;
   object-position: center;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.preview-media.is-media-ready {
+  opacity: 1;
 }
 
 /* Covers keep the established fill treatment by default. A project can opt
    into contain explicitly (or use auto for a future measured variant). */
 .preview-media-contain {
   object-fit: contain;
-  background: var(--surface);
+  background: #000;
   animation: none !important;
   transform: none !important;
 }
@@ -3577,25 +3584,29 @@ a {
 }
 
 .about-description {
+  --about-copy-size: clamp(15px, 1.15vw, 22px);
+  --about-meta-size: clamp(8px, 0.62vw, 10px);
+  --about-title-size: clamp(9px, 0.72vw, 12px);
   position: relative;
   width: min(1080px, 88vw);
+  min-height: calc(2.4em + 2 * var(--about-copy-size) * 1.18);
   margin-top: clamp(6px, 0.9vh, 12px);
   text-align: center;
-  animation: about-copy-in 0.64s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .about-description-meta {
-  display: flex;
+  display: grid;
   min-width: 0;
-  align-items: baseline;
-  justify-content: center;
-  gap: 5px 10px;
+  min-height: 2.4em;
+  align-content: start;
+  justify-items: center;
+  gap: 2px;
 }
 
 .about-description-meta > span {
   overflow: hidden;
   color: rgba(245, 243, 237, 0.48);
-  font: 700 clamp(8px, 0.62vw, 10px) / 1.2 var(--font-interface);
+  font: 700 var(--about-meta-size) / 1.2 var(--font-interface);
   letter-spacing: 0.06em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3606,7 +3617,7 @@ a {
   overflow: hidden;
   color: rgba(245, 243, 237, 0.7);
   font-family: var(--font-interface);
-  font-size: clamp(9px, 0.72vw, 12px);
+  font-size: var(--about-title-size);
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1.2;
@@ -3617,11 +3628,12 @@ a {
 .about-description p {
   display: -webkit-box;
   max-width: 920px;
+  min-height: calc(2 * var(--about-copy-size) * 1.18);
   margin: 7px auto 0;
   overflow: hidden;
   color: #d8ff36;
   font-family: var(--font-interface);
-  font-size: clamp(15px, 1.15vw, 22px);
+  font-size: var(--about-copy-size);
   font-style: italic;
   font-weight: 700;
   letter-spacing: -0.015em;
@@ -3918,29 +3930,42 @@ a {
   }
 
   .about-description {
+    --about-copy-size: clamp(12px, 3.45vw, 15px);
+    --about-meta-size: 8px;
+    --about-title-size: 8px;
     width: 100%;
+    min-height: calc(2.5em + 2 * var(--about-copy-size) * 1.18);
     margin-top: 9px;
     padding: 0 6px;
     text-align: center;
   }
 
   .about-description-meta {
-    display: block;
+    display: grid;
+    min-height: 2.5em;
   }
 
   .about-description-meta > span,
   .about-description h2 {
     display: block;
-    font-size: 8px;
     line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  .about-description-meta > span {
+    font-size: var(--about-meta-size);
+  }
+
+  .about-description h2 {
+    font-size: var(--about-title-size);
+  }
+
   .about-description p {
     max-width: 34em;
+    min-height: calc(2 * var(--about-copy-size) * 1.18);
     margin-top: 5px;
-    font-size: clamp(12px, 3.45vw, 15px);
+    font-size: var(--about-copy-size);
     line-height: 1.18;
     -webkit-line-clamp: 2;
   }

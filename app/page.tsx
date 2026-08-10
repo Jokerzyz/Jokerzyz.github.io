@@ -2025,7 +2025,7 @@ function InteractiveParticlePortrait({
         autoPlay={!reducedMotion && !suspended}
         muted
         playsInline
-        preload="metadata"
+        preload="auto"
         onLoadedData={() => setReady(true)}
         onPlaying={() => {
           setReady(true);
@@ -2438,50 +2438,42 @@ function ProjectPreview({
   const [autoFit, setAutoFit] = useState<Exclude<PreviewMode, "auto">>(() =>
     getPreviewFit(previewMode),
   );
+  const [mediaReady, setMediaReady] = useState(false);
   const firstMedia = project.visuals.find(
     (visual) => visual.kind === "image" || visual.kind === "video",
   );
+  const firstImage = firstMedia?.kind === "image" ? firstMedia.src : undefined;
+  const [imageSource, setImageSource] = useState(project.cover || firstImage);
 
   const previewClassName = `preview-media preview-media-${
     previewMode === "auto" ? autoFit : previewMode
-  }`;
+  }${mediaReady ? " is-media-ready" : ""}`;
   const updateAutoFit = (width: number, height: number) => {
     if (previewMode !== "auto" || width <= 0 || height <= 0) return;
     setAutoFit(getPreviewFit(previewMode, width / height));
   };
 
-  if (project.cover) {
+  if (imageSource) {
     return (
       <img
         className={previewClassName}
-        src={resolveMediaUrl(project.cover)}
+        src={resolveMediaUrl(imageSource)}
         alt=""
         loading="eager"
         decoding="async"
-        onLoad={(event) =>
+        onLoad={(event) => {
           updateAutoFit(
             event.currentTarget.naturalWidth,
             event.currentTarget.naturalHeight,
-          )
-        }
-      />
-    );
-  }
-
-  if (firstMedia?.kind === "image") {
-    return (
-      <img
-        className={previewClassName}
-        src={resolveMediaUrl(firstMedia.src)}
-        alt=""
-        loading="eager"
-        decoding="async"
-        onLoad={(event) =>
-          updateAutoFit(
-            event.currentTarget.naturalWidth,
-            event.currentTarget.naturalHeight,
-          )
-        }
+          );
+          setMediaReady(true);
+        }}
+        onError={() => {
+          setMediaReady(false);
+          if (project.cover && firstImage && imageSource !== firstImage) {
+            setImageSource(firstImage);
+          }
+        }}
       />
     );
   }
@@ -2498,9 +2490,11 @@ function ProjectPreview({
         loop
         playsInline
         preload="metadata"
-        onLoadedMetadata={(event) =>
+        onLoadedMetadata={(event) => {
           updateAutoFit(event.currentTarget.videoWidth, event.currentTarget.videoHeight)
-        }
+        }}
+        onLoadedData={() => setMediaReady(true)}
+        onError={() => setMediaReady(false)}
       />
     );
   }
@@ -2803,6 +2797,31 @@ function WorkSection({
   const [hovered, setHovered] = useState(initialFocusIndex);
   const hoveredProject = projects[hovered] || projects[0];
 
+  useEffect(() => {
+    const preloaders = projects
+      .map((project) => {
+        const firstImage = project.visuals.find(
+          (visual) => visual.kind === "image",
+        );
+        const source = project.cover ||
+          (firstImage?.kind === "image" ? firstImage.src : undefined);
+        if (!source) return null;
+
+        const image = new Image();
+        image.decoding = "async";
+        image.src = resolveMediaUrl(source);
+        return image;
+      })
+      .filter((image): image is HTMLImageElement => Boolean(image));
+
+    return () => {
+      preloaders.forEach((image) => {
+        image.onload = null;
+        image.onerror = null;
+      });
+    };
+  }, []);
+
   return (
     <section className="main-section work-section" aria-label="作品">
       <div className="work-browser">
@@ -2856,6 +2875,8 @@ function MaskedExperienceMedia({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const hasPaintedFrameRef = useRef(false);
+  const sourceReadyRef = useRef(false);
   const stillImage = experience.video
     ? undefined
     : experience.poster || experience.image || fallbackImage;
@@ -2869,8 +2890,7 @@ function MaskedExperienceMedia({
     if (!context) return;
     const drawCanvas = canvas;
     const drawContext = context;
-    drawContext.setTransform(1, 0, 0, 1, 0, 0);
-    drawContext.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    sourceReadyRef.current = false;
 
     let startTime = performance.now();
     const lifecycle = createAnimationLifecycle();
@@ -2918,33 +2938,40 @@ function MaskedExperienceMedia({
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
       const targetWidth = Math.round(width * pixelRatio);
       const targetHeight = Math.round(height * pixelRatio);
+      const resized =
+        drawCanvas.width !== targetWidth || drawCanvas.height !== targetHeight;
 
-      if (
-        drawCanvas.width !== targetWidth ||
-        drawCanvas.height !== targetHeight
-      ) {
+      if (resized) {
         drawCanvas.width = targetWidth;
         drawCanvas.height = targetHeight;
+        hasPaintedFrameRef.current = false;
       }
-
-      drawContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      drawContext.clearRect(0, 0, width, height);
 
       const video = videoRef.current;
       const image = imageRef.current;
       const hasVideoFrame = Boolean(
-        video && video.readyState >= 2 && video.videoWidth && video.videoHeight,
+        sourceReadyRef.current &&
+          video &&
+          video.readyState >= 2 &&
+          video.videoWidth &&
+          video.videoHeight,
       );
       const hasImageFrame = Boolean(
         image && image.complete && image.naturalWidth && image.naturalHeight,
       );
 
-      if (experience.video && !hasVideoFrame) {
-        drawContext.fillStyle = "#000";
-        drawContext.fillRect(0, 0, width, height);
+      if (
+        experience.video &&
+        !hasVideoFrame &&
+        hasPaintedFrameRef.current &&
+        !resized
+      ) {
         if (!reducedMotion) scheduleFrame();
         return;
       }
+
+      drawContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      drawContext.clearRect(0, 0, width, height);
 
       if (hasVideoFrame && video) {
         drawCover(
@@ -3008,6 +3035,7 @@ function MaskedExperienceMedia({
       drawContext.fillText(title, 0, 0);
       drawContext.restore();
       drawContext.globalCompositeOperation = "source-over";
+      hasPaintedFrameRef.current = true;
 
       if (!reducedMotion) {
         scheduleFrame();
@@ -3024,10 +3052,27 @@ function MaskedExperienceMedia({
     };
     const video = videoRef.current;
     const image = imageRef.current;
+    const expectedVideoUrl = experience.video
+      ? new URL(resolveMediaUrl(experience.video), window.location.href).href
+      : undefined;
+    const markVideoReady = () => {
+      if (
+        !video ||
+        !expectedVideoUrl ||
+        video.currentSrc !== expectedVideoUrl ||
+        video.readyState < 2
+      ) {
+        return;
+      }
+      sourceReadyRef.current = true;
+      drawStableFrame();
+    };
 
-    video?.addEventListener("loadeddata", drawStableFrame);
+    video?.addEventListener("loadeddata", markVideoReady);
     image?.addEventListener("load", drawStableFrame);
     window.addEventListener("resize", drawStableFrame);
+
+    markVideoReady();
 
     document.fonts
       .load('400 120px "Anton-Regular"')
@@ -3050,24 +3095,20 @@ function MaskedExperienceMedia({
     return () => {
       lifecycle.dispose();
       frameLoop.dispose();
-      video?.removeEventListener("loadeddata", drawStableFrame);
+      video?.removeEventListener("loadeddata", markVideoReady);
       image?.removeEventListener("load", drawStableFrame);
       window.removeEventListener("resize", drawStableFrame);
     };
   }, [experience, fallbackImage, reducedMotion]);
 
   return (
-    <div
-      className={`about-mask-media experience-${experience.mediaKind}`}
-      key={experience.date}
-    >
+    <div className={`about-mask-media experience-${experience.mediaKind}`}>
       <canvas
         ref={canvasRef}
         aria-label={`ZYRON — ${experience.mediaLabel}`}
       />
       {experience.video && (
         <video
-          key={experience.date}
           ref={videoRef}
           className="about-mask-source"
           src={resolveMediaUrl(experience.video)}
@@ -3076,7 +3117,7 @@ function MaskedExperienceMedia({
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
         />
       )}
       {stillImage && (
@@ -3115,7 +3156,6 @@ function AboutSection({ reducedMotion }: { reducedMotion: boolean }) {
         </div>
 
         <MaskedExperienceMedia
-          key={activeStep.date}
           experience={activeStep}
           fallbackImage={getExperienceFallbackImage(activeStep, projects)}
           reducedMotion={reducedMotion}
@@ -3123,7 +3163,6 @@ function AboutSection({ reducedMotion }: { reducedMotion: boolean }) {
         <div
           className="about-description"
           id="about-experience-panel"
-          key={activeStep.title}
           aria-live="polite"
         >
           <div className="about-description-meta">
