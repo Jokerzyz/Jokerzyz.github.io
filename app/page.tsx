@@ -323,10 +323,9 @@ const contactContent = generatedContent.contact;
 const curtainColumns = Array.from({ length: 15 }, (_, index) => index);
 const homeTitleSlices = Array.from({ length: 14 }, (_, index) => index);
 const homeRoleSlices = Array.from({ length: 10 }, (_, index) => index);
-const configuredMediaOrigin = (process.env.NEXT_PUBLIC_MEDIA_ORIGIN || "").replace(
-  /\/+$/,
-  "",
-);
+const configuredMediaOrigin = (
+  process.env.NEXT_PUBLIC_MEDIA_ORIGIN || "https://media.zyrondesignz.com"
+).replace(/\/+$/, "");
 const siteContentPathPrefixes = [
   "/网站内容/",
   "/%E7%BD%91%E7%AB%99%E5%86%85%E5%AE%B9/",
@@ -357,6 +356,38 @@ export function resolveMediaUrl(
 
 const particlePortraitVideoSrc =
   resolveMediaUrl("/网站内容/首页/互动形象/首页像素交互视频.mp4");
+
+const warmedVideoMedia = new Map<string, HTMLVideoElement>();
+
+export function warmVideoMedia(value?: string) {
+  if (!value || typeof document === "undefined") return;
+  const source = resolveMediaUrl(value);
+  if (!source || warmedVideoMedia.has(source)) return;
+
+  const video = document.createElement("video");
+  video.preload = "auto";
+  video.muted = true;
+  video.playsInline = true;
+  video.crossOrigin = "anonymous";
+  video.src = source;
+  video.addEventListener(
+    "loadeddata",
+    () => {
+      video.pause();
+      video.preload = "metadata";
+    },
+    { once: true },
+  );
+  video.addEventListener(
+    "error",
+    () => {
+      warmedVideoMedia.delete(source);
+    },
+    { once: true },
+  );
+  warmedVideoMedia.set(source, video);
+  video.load();
+}
 
 type ParticleVisualSettings = {
   imageScale: number;
@@ -1943,9 +1974,15 @@ export function LegacyInteractiveParticlePortrait({
 function InteractiveParticlePortrait({
   reducedMotion,
   suspended,
+  onReady,
+  onEnded,
+  onError,
 }: {
   reducedMotion: boolean;
   suspended: boolean;
+  onReady: () => void;
+  onEnded: () => void;
+  onError: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const resumeAfterVisibilityRef = useRef(false);
@@ -2026,15 +2063,23 @@ function InteractiveParticlePortrait({
         muted
         playsInline
         preload="auto"
-        onLoadedData={() => setReady(true)}
+        onLoadedData={() => {
+          setReady(true);
+          onReady();
+        }}
         onPlaying={() => {
           setReady(true);
           setEnded(false);
+          onReady();
         }}
-        onEnded={() => setEnded(true)}
+        onEnded={() => {
+          setEnded(true);
+          onEnded();
+        }}
         onError={() => {
           setReady(false);
           setEnded(false);
+          onError();
         }}
       />
       <span className="pixel-video-replay" aria-hidden="true">
@@ -2048,10 +2093,16 @@ function HomeShowreel({
   content,
   reducedMotion,
   suspendEffects,
+  onMediaReady,
+  onMediaEnded,
+  onMediaError,
 }: {
   content: HomeContent;
   reducedMotion: boolean;
   suspendEffects: boolean;
+  onMediaReady: () => void;
+  onMediaEnded: () => void;
+  onMediaError: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hasPersonalMedia = Boolean(content.video || content.photo);
@@ -2073,13 +2124,17 @@ function HomeShowreel({
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
+          onLoadedData={onMediaReady}
+          onError={onMediaError}
         />
       ) : content.photo ? (
         <div className="home-portrait-layout">
           <img
             src={resolveMediaUrl(content.photo)}
             alt={`${content.name}个人照片`}
+            onLoad={onMediaReady}
+            onError={onMediaError}
           />
           <div className="home-portrait-copy">
             <span>PROFILE / INTRO</span>
@@ -2090,6 +2145,9 @@ function HomeShowreel({
         <InteractiveParticlePortrait
           reducedMotion={reducedMotion}
           suspended={suspendEffects}
+          onReady={onMediaReady}
+          onEnded={onMediaEnded}
+          onError={onMediaError}
         />
       )}
       <div className="showreel-frame" aria-hidden="true" />
@@ -2359,9 +2417,15 @@ function SideNav({
 function HomeSection({
   reducedMotion,
   introActive,
+  onMediaReady,
+  onMediaEnded,
+  onMediaError,
 }: {
   reducedMotion: boolean;
   introActive: boolean;
+  onMediaReady: () => void;
+  onMediaEnded: () => void;
+  onMediaError: () => void;
 }) {
   const isParticleHome = !homeContent.video && !homeContent.photo;
   return (
@@ -2374,6 +2438,9 @@ function HomeSection({
           content={homeContent}
           reducedMotion={reducedMotion}
           suspendEffects={introActive}
+          onMediaReady={onMediaReady}
+          onMediaEnded={onMediaEnded}
+          onMediaError={onMediaError}
         />
         <p className="home-edition">{homeContent.edition}</p>
       </div>
@@ -3189,8 +3256,14 @@ function AboutSection({ reducedMotion }: { reducedMotion: boolean }) {
               aria-controls="about-experience-panel"
               aria-label={`${item.date}，${item.label}`}
               key={item.date}
-              onMouseEnter={() => setStep(index)}
-              onFocus={() => setStep(index)}
+              onMouseEnter={() => {
+                warmVideoMedia(item.video);
+                setStep(index);
+              }}
+              onFocus={() => {
+                warmVideoMedia(item.video);
+                setStep(index);
+              }}
               onClick={() => setStep(index)}
             >
               <b>{item.date}</b>
@@ -3583,6 +3656,11 @@ export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [introRevealing, setIntroRevealing] = useState(false);
   const [navRevealed, setNavRevealed] = useState(false);
+  const [introMinimumElapsed, setIntroMinimumElapsed] = useState(false);
+  const [introWaitTimedOut, setIntroWaitTimedOut] = useState(false);
+  const [homeMediaReady, setHomeMediaReady] = useState(false);
+  const [homeMediaFailed, setHomeMediaFailed] = useState(false);
+  const [homePlaybackEnded, setHomePlaybackEnded] = useState(false);
   const [restoreProjectIndex, setRestoreProjectIndex] = useState<number | null>(
     null,
   );
@@ -3620,24 +3698,60 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const revealTimer = window.setTimeout(
-      () => setIntroRevealing(true),
+    const minimumTimer = window.setTimeout(
+      () => setIntroMinimumElapsed(true),
       reducedMotion ? 0 : particleMatrixIntroTimeline.contentRevealStart,
     );
+    const timeoutTimer = window.setTimeout(
+      () => setIntroWaitTimedOut(true),
+      reducedMotion ? 0 : 6000,
+    );
+    return () => {
+      window.clearTimeout(minimumTimer);
+      window.clearTimeout(timeoutTimer);
+    };
+  }, [reducedMotion]);
+
+  useEffect(() => {
+    const mediaSatisfied =
+      active !== "home" ||
+      homeMediaReady ||
+      homeMediaFailed ||
+      introWaitTimedOut;
+    if (!reducedMotion && (!introMinimumElapsed || !mediaSatisfied)) return;
+
+    setIntroRevealing(true);
     const navTimer = window.setTimeout(
       () => setNavRevealed(true),
-      reducedMotion ? 0 : particleMatrixIntroTimeline.navRevealStart,
+      reducedMotion
+        ? 0
+        : particleMatrixIntroTimeline.navRevealStart -
+            particleMatrixIntroTimeline.contentRevealStart,
     );
     const completeTimer = window.setTimeout(
       () => setLoaded(true),
-      reducedMotion ? 0 : particleMatrixIntroDuration,
+      reducedMotion
+        ? 0
+        : particleMatrixIntroDuration -
+            particleMatrixIntroTimeline.contentRevealStart,
     );
     return () => {
-      window.clearTimeout(revealTimer);
       window.clearTimeout(navTimer);
       window.clearTimeout(completeTimer);
     };
-  }, [reducedMotion]);
+  }, [
+    active,
+    homeMediaFailed,
+    homeMediaReady,
+    introMinimumElapsed,
+    introWaitTimedOut,
+    reducedMotion,
+  ]);
+
+  useEffect(() => {
+    if (!homePlaybackEnded) return;
+    warmVideoMedia(aboutSteps.at(-1)?.video);
+  }, [homePlaybackEnded]);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
@@ -3717,6 +3831,9 @@ export default function Home() {
     <HomeSection
       reducedMotion={reducedMotion}
       introActive={!loaded && !reducedMotion}
+      onMediaReady={() => setHomeMediaReady(true)}
+      onMediaEnded={() => setHomePlaybackEnded(true)}
+      onMediaError={() => setHomeMediaFailed(true)}
     />
   );
   if (active === "work") {

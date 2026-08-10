@@ -12,6 +12,7 @@
     "prebuild": "node scripts/generate-content.mjs",
     "build": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build",
     "export:github": "npm run build && node scripts/export-github-pages.mjs",
+    "export:oss": "NEXT_PUBLIC_MEDIA_ORIGIN=https://media.zyrondesignz.com npm run build && node scripts/export-oss-site.mjs",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",

@@ -205,7 +205,14 @@ test("home pixel video plays once, holds its last frame, and replays on demand",
   assert.match(portraitSource, /src=\{particlePortraitVideoSrc\}/);
   assert.match(portraitSource, /preload="auto"/);
   assert.match(portraitSource, /autoPlay=\{!reducedMotion && !suspended\}/);
-  assert.match(portraitSource, /onEnded=\{\(\) => setEnded\(true\)\}/);
+  assert.match(
+    portraitSource,
+    /onEnded=\{\(\) => \{[\s\S]*?setEnded\(true\);[\s\S]*?onEnded\(\);/,
+  );
+  assert.match(
+    portraitSource,
+    /onLoadedData=\{\(\) => \{[\s\S]*?setReady\(true\);[\s\S]*?onReady\(\);/,
+  );
   assert.match(portraitSource, /if \(!video \|\| !ended\) return/);
   assert.match(portraitSource, /video\.currentTime\s*=\s*0/);
   assert.match(portraitSource, /data-video-ended=\{ended \? "true" : undefined\}/);
@@ -241,6 +248,33 @@ test("media origins rewrite only local site-content URLs", async () => {
     "https://cdn.example.com/封面.jpg",
   );
   assert.equal(resolveMediaUrl(undefined, origin), undefined);
+});
+
+test("welcome gates on the home first frame and progressively warms About", async () => {
+  const [pageSource, layoutSource, css, packageSource, ossExportSource] =
+    await Promise.all([
+      readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+      readFile(new URL("../package.json", import.meta.url), "utf8"),
+      readFile(new URL("../scripts/export-oss-site.mjs", import.meta.url), "utf8"),
+    ]);
+
+  assert.match(pageSource, /const \[homeMediaReady, setHomeMediaReady\]/);
+  assert.match(pageSource, /homeMediaReady \|\|[\s\S]*?homeMediaFailed \|\|[\s\S]*?introWaitTimedOut/);
+  assert.match(pageSource, /setIntroWaitTimedOut\(true\)[\s\S]*?6000/);
+  assert.match(pageSource, /if \(!homePlaybackEnded\) return;[\s\S]*?warmVideoMedia\(aboutSteps\.at\(-1\)\?\.video\)/);
+  assert.match(pageSource, /video\.preload = "auto"/);
+  assert.match(pageSource, /onMouseEnter=\{\(\) => \{[\s\S]*?warmVideoMedia\(item\.video\)/);
+  assert.match(layoutSource, /rel="preconnect" href=\{mediaOrigin\}/);
+  assert.match(css, /\.site-loader\.is-content-revealing \.intro-welcome/);
+  assert.match(css, /@keyframes intro-welcome-exit/);
+  assert.match(
+    packageSource,
+    /NEXT_PUBLIC_MEDIA_ORIGIN=https:\/\/media\.zyrondesignz\.com npm run build/,
+  );
+  assert.match(ossExportSource, /const siteContentRoot/);
+  assert.match(ossExportSource, /if \(isSiteContentAsset\) return false/);
 });
 
 test("media-origin deployment wiring avoids the retired preload", async () => {
@@ -643,7 +677,10 @@ test("keeps focus and reduced-motion presentation contracts", async () => {
   );
   assert.match(portraitSource, /className="pixel-video-stage"/);
   assert.match(portraitSource, /className="pixel-video-media"/);
-  assert.match(portraitSource, /onEnded=\{\(\) => setEnded\(true\)\}/);
+  assert.match(
+    portraitSource,
+    /onEnded=\{\(\) => \{[\s\S]*?setEnded\(true\);[\s\S]*?onEnded\(\);/,
+  );
   assert.match(portraitSource, /video\.currentTime\s*=\s*0/);
   assert.doesNotMatch(
     portraitSource,

@@ -2552,7 +2552,11 @@ a {
   align-items: center;
   justify-content: center;
   gap: 11px;
-  animation: intro-welcome-presence 600ms linear both;
+  animation: intro-welcome-presence 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.site-loader.is-content-revealing .intro-welcome {
+  animation: intro-welcome-exit 240ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 .intro-welcome span {
@@ -2615,6 +2619,17 @@ a {
     transform: scale(1);
   }
   100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes intro-welcome-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
     opacity: 0;
     transform: scale(1.03);
   }
