@@ -354,6 +354,29 @@ export function resolveMediaUrl(
   return normalizedOrigin ? `${normalizedOrigin}${value}` : value;
 }
 
+export function resolveOptimizedImageUrl(
+  value: string | undefined,
+  width = 1600,
+  quality = 78,
+) {
+  const resolved = resolveMediaUrl(value);
+  const normalizedValue = value?.toLowerCase();
+  if (
+    !resolved ||
+    !siteContentPathPrefixes.some((prefix) =>
+      normalizedValue?.startsWith(prefix.toLowerCase()),
+    )
+  ) {
+    return resolved;
+  }
+
+  const separator = resolved.includes("?") ? "&" : "?";
+  return `${resolved}${separator}x-oss-process=image/resize%2Cw_${Math.max(
+    320,
+    Math.round(width),
+  )}/quality%2Cq_${Math.min(90, Math.max(50, Math.round(quality)))}/format%2Cwebp`;
+}
+
 const particlePortraitVideoSrc =
   resolveMediaUrl("/网站内容/首页/互动形象/首页像素交互视频.mp4");
 
@@ -2185,7 +2208,9 @@ function VisualScene({
 }) {
   const sceneRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const isMediaScene = visual.kind === "image" || visual.kind === "video";
+  const [isInView, setIsInView] = useState(reducedMotion);
+  const [mediaReady, setMediaReady] = useState(!isMediaScene);
   const style = {
     "--accent": project.accent,
     "--surface": project.surface,
@@ -2203,7 +2228,7 @@ function VisualScene({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
-        setIsVisible(true);
+        setIsInView(true);
         observer.disconnect();
       },
       { threshold: 0.18 },
@@ -2213,10 +2238,12 @@ function VisualScene({
     return () => observer.disconnect();
   }, [reducedMotion]);
 
+  const revealScene = (isInView || reducedMotion) && mediaReady;
+
   return (
     <article
       ref={sceneRef}
-      className={`visual-scene visual-${visual.kind} ${isVisible || reducedMotion ? "is-visible" : ""}`}
+      className={`visual-scene visual-${visual.kind} ${revealScene ? "is-visible" : ""}`}
       style={style}
       aria-label={visual.label}
     >
@@ -2229,9 +2256,23 @@ function VisualScene({
         {visual.kind === "image" && (
           <img
             className="project-asset"
-            src={resolveMediaUrl(visual.src)}
+            src={resolveOptimizedImageUrl(visual.src, 1600, 78)}
+            srcSet={`${resolveOptimizedImageUrl(visual.src, 960, 76)} 960w, ${resolveOptimizedImageUrl(visual.src, 1600, 78)} 1600w, ${resolveOptimizedImageUrl(visual.src, 2400, 80)} 2400w`}
+            sizes="(max-width: 820px) 92vw, 50vw"
             alt={visual.label}
             loading={index < 2 ? "eager" : "lazy"}
+            decoding="async"
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              void image
+                .decode()
+                .catch(() => undefined)
+                .then(() => setMediaReady(true));
+            }}
+            onError={(event) => {
+              event.currentTarget.style.visibility = "hidden";
+              setMediaReady(true);
+            }}
           />
         )}
 
@@ -2246,6 +2287,8 @@ function VisualScene({
             loop
             playsInline
             preload="metadata"
+            onLoadedData={() => setMediaReady(true)}
+            onError={() => setMediaReady(true)}
           />
         )}
 
@@ -2494,10 +2537,12 @@ function ProjectPreview({
   project,
   index,
   reducedMotion,
+  onReady,
 }: {
   project: Project;
   index: number;
   reducedMotion: boolean;
+  onReady: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   useReducedMotionMedia(videoRef, reducedMotion);
@@ -2512,6 +2557,10 @@ function ProjectPreview({
   const firstImage = firstMedia?.kind === "image" ? firstMedia.src : undefined;
   const [imageSource, setImageSource] = useState(project.cover || firstImage);
 
+  useEffect(() => {
+    if (!imageSource && firstMedia?.kind !== "video") onReady();
+  }, [firstMedia?.kind, imageSource, onReady]);
+
   const previewClassName = `preview-media preview-media-${
     previewMode === "auto" ? autoFit : previewMode
   }${mediaReady ? " is-media-ready" : ""}`;
@@ -2524,21 +2573,32 @@ function ProjectPreview({
     return (
       <img
         className={previewClassName}
-        src={resolveMediaUrl(imageSource)}
+        src={resolveOptimizedImageUrl(imageSource, 1200, 75)}
+        srcSet={`${resolveOptimizedImageUrl(imageSource, 640, 72)} 640w, ${resolveOptimizedImageUrl(imageSource, 1200, 75)} 1200w, ${resolveOptimizedImageUrl(imageSource, 1920, 78)} 1920w`}
+        sizes="(max-width: 820px) 0px, 50vw"
         alt=""
-        loading="eager"
+        loading="lazy"
         decoding="async"
         onLoad={(event) => {
           updateAutoFit(
             event.currentTarget.naturalWidth,
             event.currentTarget.naturalHeight,
           );
-          setMediaReady(true);
+          const image = event.currentTarget;
+          void image
+            .decode()
+            .catch(() => undefined)
+            .then(() => {
+              setMediaReady(true);
+              onReady();
+            });
         }}
         onError={() => {
           setMediaReady(false);
           if (project.cover && firstImage && imageSource !== firstImage) {
             setImageSource(firstImage);
+          } else {
+            onReady();
           }
         }}
       />
@@ -2560,8 +2620,14 @@ function ProjectPreview({
         onLoadedMetadata={(event) => {
           updateAutoFit(event.currentTarget.videoWidth, event.currentTarget.videoHeight)
         }}
-        onLoadedData={() => setMediaReady(true)}
-        onError={() => setMediaReady(false)}
+        onLoadedData={() => {
+          setMediaReady(true);
+          onReady();
+        }}
+        onError={() => {
+          setMediaReady(false);
+          onReady();
+        }}
       />
     );
   }
@@ -2862,9 +2928,24 @@ function WorkSection({
   initialFocusIndex: number;
 }) {
   const [hovered, setHovered] = useState(initialFocusIndex);
+  const [previewReady, setPreviewReady] = useState(false);
+  const previewGenerationRef = useRef(0);
   const hoveredProject = projects[hovered] || projects[0];
 
+  const selectPreview = useCallback(
+    (index: number) => {
+      if (index === hovered) return;
+      previewGenerationRef.current += 1;
+      setPreviewReady(false);
+      setHovered(index);
+    },
+    [hovered],
+  );
+  const previewGeneration = previewGenerationRef.current;
+
   useEffect(() => {
+    if (window.matchMedia("(max-width: 820px)").matches) return;
+
     const preloaders = projects
       .map((project) => {
         const firstImage = project.visuals.find(
@@ -2876,7 +2957,9 @@ function WorkSection({
 
         const image = new Image();
         image.decoding = "async";
-        image.src = resolveMediaUrl(source);
+        image.sizes = "50vw";
+        image.srcset = `${resolveOptimizedImageUrl(source, 640, 72)} 640w, ${resolveOptimizedImageUrl(source, 1200, 75)} 1200w, ${resolveOptimizedImageUrl(source, 1920, 78)} 1920w`;
+        image.src = resolveOptimizedImageUrl(source, 1200, 75) || "";
         return image;
       })
       .filter((image): image is HTMLImageElement => Boolean(image));
@@ -2894,7 +2977,7 @@ function WorkSection({
       <div className="work-browser">
         <KineticWorkList
           active={hovered}
-          onHover={setHovered}
+          onHover={selectPreview}
           onOpen={onOpenProject}
           reducedMotion={reducedMotion}
         />
@@ -2911,11 +2994,19 @@ function WorkSection({
         aria-hidden="true"
       >
         <div className="preview-frame">
-          <div className="preview-switch" key={hovered}>
+          <div
+            className={`preview-switch ${previewReady ? "is-media-ready" : ""}`}
+            key={hovered}
+          >
             <ProjectPreview
               project={hoveredProject}
               index={hovered}
               reducedMotion={reducedMotion}
+              onReady={() => {
+                if (previewGenerationRef.current === previewGeneration) {
+                  setPreviewReady(true);
+                }
+              }}
             />
           </div>
         </div>
@@ -3206,6 +3297,16 @@ function MaskedExperienceMedia({
 function AboutSection({ reducedMotion }: { reducedMotion: boolean }) {
   const [step, setStep] = useState(Math.max(0, aboutSteps.length - 1));
   const activeStep = aboutSteps[step];
+  const timelineButtonsRef = useRef<Array<HTMLButtonElement | null>>([]);
+
+  useEffect(() => {
+    if (!window.matchMedia("(max-width: 820px)").matches) return;
+    timelineButtonsRef.current[step]?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [reducedMotion, step]);
 
   return (
     <section className="main-section about-section" aria-label="经历">
@@ -3250,6 +3351,9 @@ function AboutSection({ reducedMotion }: { reducedMotion: boolean }) {
         >
           {aboutSteps.map((item, index) => (
             <button
+              ref={(element) => {
+                timelineButtonsRef.current[index] = element;
+              }}
               type="button"
               className={step === index ? "is-active" : ""}
               aria-pressed={step === index}
@@ -3496,6 +3600,8 @@ function ProjectDetail({
     const handleWheel = (event: WheelEvent) => {
       if (
         window.innerWidth <= 820 ||
+        (event.target instanceof Element &&
+          Boolean(event.target.closest(".project-info"))) ||
         Math.abs(event.deltaX) > Math.abs(event.deltaY)
       ) {
         return;
@@ -3720,24 +3826,29 @@ export default function Home() {
       introWaitTimedOut;
     if (!reducedMotion && (!introMinimumElapsed || !mediaSatisfied)) return;
 
-    setIntroRevealing(true);
-    const navTimer = window.setTimeout(
-      () => setNavRevealed(true),
-      reducedMotion
-        ? 0
-        : particleMatrixIntroTimeline.navRevealStart -
-            particleMatrixIntroTimeline.contentRevealStart,
-    );
-    const completeTimer = window.setTimeout(
-      () => setLoaded(true),
-      reducedMotion
-        ? 0
-        : particleMatrixIntroDuration -
-            particleMatrixIntroTimeline.contentRevealStart,
-    );
+    let navTimer: number | undefined;
+    let completeTimer: number | undefined;
+    const revealFrame = window.requestAnimationFrame(() => {
+      setIntroRevealing(true);
+      navTimer = window.setTimeout(
+        () => setNavRevealed(true),
+        reducedMotion
+          ? 0
+          : particleMatrixIntroTimeline.navRevealStart -
+              particleMatrixIntroTimeline.contentRevealStart,
+      );
+      completeTimer = window.setTimeout(
+        () => setLoaded(true),
+        reducedMotion
+          ? 0
+          : particleMatrixIntroDuration -
+              particleMatrixIntroTimeline.contentRevealStart,
+      );
+    });
     return () => {
-      window.clearTimeout(navTimer);
-      window.clearTimeout(completeTimer);
+      window.cancelAnimationFrame(revealFrame);
+      if (navTimer !== undefined) window.clearTimeout(navTimer);
+      if (completeTimer !== undefined) window.clearTimeout(completeTimer);
     };
   }, [
     active,

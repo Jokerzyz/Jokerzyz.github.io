@@ -224,7 +224,7 @@ test("home pixel video plays once, holds its last frame, and replays on demand",
 });
 
 test("media origins rewrite only local site-content URLs", async () => {
-  const { resolveMediaUrl } = await loadPageModule();
+  const { resolveMediaUrl, resolveOptimizedImageUrl } = await loadPageModule();
   const localPath = "/网站内容/作品/封面.jpg";
   const encodedPath =
     "/%e7%bd%91%e7%ab%99%e5%86%85%e5%ae%b9/%E4%BD%9C%E5%93%81/%E5%B0%81%E9%9D%A2.jpg";
@@ -248,6 +248,15 @@ test("media origins rewrite only local site-content URLs", async () => {
     "https://cdn.example.com/封面.jpg",
   );
   assert.equal(resolveMediaUrl(undefined, origin), undefined);
+  assert.equal(
+    resolveOptimizedImageUrl("https://cdn.example.com/封面.jpg", 960, 76),
+    "https://cdn.example.com/封面.jpg",
+  );
+  assert.match(
+    resolveOptimizedImageUrl(localPath, 960, 76),
+    /^https:\/\/media\.zyrondesignz\.com\/网站内容\/作品\/封面\.jpg\?x-oss-process=image\/resize%2Cw_960\/quality%2Cq_76\/format%2Cwebp$/,
+  );
+  assert.equal(resolveOptimizedImageUrl(undefined), undefined);
 });
 
 test("welcome gates on the home first frame and progressively warms About", async () => {
@@ -667,8 +676,14 @@ test("keeps focus and reduced-motion presentation contracts", async () => {
   assert.match(pageSource, /首页像素交互视频\.mp4/);
   assert.match(pageSource, /configuredMediaOrigin/);
   assert.match(pageSource, /resolveMediaUrl\(content\.video\)/);
-  assert.match(pageSource, /resolveMediaUrl\(visual\.src\)/);
-  assert.match(pageSource, /resolveMediaUrl\(imageSource\)/);
+  assert.match(pageSource, /resolveOptimizedImageUrl\(visual\.src/);
+  assert.match(pageSource, /resolveOptimizedImageUrl\(imageSource/);
+  assert.match(pageSource, /sizes="\(max-width: 820px\) 92vw, 50vw"/);
+  assert.match(
+    pageSource,
+    /const revealScene = \(isInView \|\| reducedMotion\) && mediaReady/,
+  );
+  assert.match(pageSource, /preview-switch \$\{previewReady \? "is-media-ready"/);
   assert.match(pageSource, /resolveMediaUrl\(experience\.video\)/);
   assert.match(pageSource, /resolveMediaUrl\("\/网站内容\/联系\/微信二维码\.jpg"\)/);
   const portraitSource = pageSource.slice(
