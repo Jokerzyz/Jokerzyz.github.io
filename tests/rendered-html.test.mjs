@@ -205,15 +205,20 @@ test("home pixel video plays once, holds its last frame, and replays on demand",
   assert.match(portraitSource, /src=\{particlePortraitVideoSrc\}/);
   assert.match(portraitSource, /preload="auto"/);
   assert.match(portraitSource, /autoPlay=\{!reducedMotion && !suspended\}/);
+  assert.match(portraitSource, /readyState >= HTMLMediaElement\.HAVE_CURRENT_DATA/);
+  assert.match(portraitSource, /data-video-blocked=\{playbackBlocked \|\| failed/);
+  assert.match(portraitSource, /TAP TO PLAY/);
+  assert.match(portraitSource, /poster=\{particlePortraitPosterSrc\}/);
   assert.match(
     portraitSource,
     /onEnded=\{\(\) => \{[\s\S]*?setEnded\(true\);[\s\S]*?onEnded\(\);/,
   );
+  assert.match(portraitSource, /const markReady = useCallback\(\(\) => \{[\s\S]*?setReady\(true\);[\s\S]*?onReady\(\);/);
+  assert.match(portraitSource, /onLoadedData=\{markReady\}/);
   assert.match(
     portraitSource,
-    /onLoadedData=\{\(\) => \{[\s\S]*?setReady\(true\);[\s\S]*?onReady\(\);/,
+    /if \(!video \|\| \(!ended && !playbackBlocked && !failed\)\) return/,
   );
-  assert.match(portraitSource, /if \(!video \|\| !ended\) return/);
   assert.match(portraitSource, /video\.currentTime\s*=\s*0/);
   assert.match(portraitSource, /data-video-ended=\{ended \? "true" : undefined\}/);
   assert.doesNotMatch(portraitSource, /\bloop\b/);
@@ -221,6 +226,28 @@ test("home pixel video plays once, holds its last frame, and replays on demand",
     portraitSource,
     /pointermove|pointerleave|VideoTexture|PlaneGeometry|WebGLRenderer|uTrail/,
   );
+});
+
+test("mobile project details use one vertical lazy-loading stream", async () => {
+  const [pageSource, css] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(
+    css,
+    /@media \(max-width: 820px\)[\s\S]*?\.project-gallery\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;[\s\S]*?scroll-snap-type:\s*none;/,
+  );
+  assert.match(
+    css,
+    /\.project-gallery \.visual-scene,[\s\S]*?\.project-gallery \.next-project-card\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0;/,
+  );
+  assert.match(
+    pageSource,
+    /loading=\{index < 2 \|\| isInView \? "eager" : "lazy"\}/,
+  );
+  assert.match(pageSource, /rootMargin: "720px 0px"/);
+  assert.match(pageSource, /sizes="\(max-width: 820px\) 100vw, 50vw"/);
 });
 
 test("media origins rewrite only local site-content URLs", async () => {
@@ -678,7 +705,7 @@ test("keeps focus and reduced-motion presentation contracts", async () => {
   assert.match(pageSource, /resolveMediaUrl\(content\.video\)/);
   assert.match(pageSource, /resolveOptimizedImageUrl\(visual\.src/);
   assert.match(pageSource, /resolveOptimizedImageUrl\(imageSource/);
-  assert.match(pageSource, /sizes="\(max-width: 820px\) 92vw, 50vw"/);
+  assert.match(pageSource, /sizes="\(max-width: 820px\) 100vw, 50vw"/);
   assert.match(
     pageSource,
     /const revealScene = \(isInView \|\| reducedMotion\) && mediaReady/,

@@ -379,6 +379,7 @@ export function resolveOptimizedImageUrl(
 
 const particlePortraitVideoSrc =
   resolveMediaUrl("/网站内容/首页/互动形象/首页像素交互视频.mp4");
+const particlePortraitPosterSrc = "/home-video-poster.jpg";
 
 const warmedVideoMedia = new Map<string, HTMLVideoElement>();
 
@@ -2011,6 +2012,43 @@ function InteractiveParticlePortrait({
   const resumeAfterVisibilityRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [ended, setEnded] = useState(false);
+  const [playbackBlocked, setPlaybackBlocked] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const markReady = useCallback(() => {
+    setReady(true);
+    setFailed(false);
+    onReady();
+  }, [onReady]);
+
+  const attemptPlayback = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || reducedMotion) return;
+
+    void video
+      .play()
+      .then(() => {
+        setPlaybackBlocked(false);
+        setFailed(false);
+      })
+      .catch(() => {
+        setPlaybackBlocked(true);
+        if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          markReady();
+        }
+      });
+  }, [markReady, reducedMotion]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Cached media can reach loadeddata before React hydrates and attaches its
+    // JSX event handlers. Always reconcile the element's current state once.
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      markReady();
+    }
+  }, [markReady]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -2022,8 +2060,8 @@ function InteractiveParticlePortrait({
       return;
     }
 
-    void video.play().catch(() => undefined);
-  }, [reducedMotion, suspended]);
+    attemptPlayback();
+  }, [attemptPlayback, reducedMotion, suspended]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -2043,7 +2081,7 @@ function InteractiveParticlePortrait({
         !video.ended
       ) {
         resumeAfterVisibilityRef.current = false;
-        void video.play().catch(() => undefined);
+        attemptPlayback();
       }
     };
 
@@ -2052,17 +2090,15 @@ function InteractiveParticlePortrait({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       resumeAfterVisibilityRef.current = false;
     };
-  }, [reducedMotion, suspended]);
+  }, [attemptPlayback, reducedMotion, suspended]);
 
   const replay = () => {
     const video = videoRef.current;
-    if (!video || !ended) return;
+    if (!video || (!ended && !playbackBlocked && !failed)) return;
 
-    video.currentTime = 0;
-    void video
-      .play()
-      .then(() => setEnded(false))
-      .catch(() => setEnded(true));
+    if (ended || failed) video.currentTime = 0;
+    setEnded(false);
+    attemptPlayback();
   };
 
   return (
@@ -2071,13 +2107,22 @@ function InteractiveParticlePortrait({
       className="pixel-video-stage"
       data-video-ready={ready ? "true" : undefined}
       data-video-ended={ended ? "true" : undefined}
+      data-video-blocked={playbackBlocked || failed ? "true" : undefined}
       aria-label={
         ended
           ? "像素作品视频已播放完毕，点击从头重播"
+          : playbackBlocked || failed
+            ? "像素作品视频等待播放，点击开始"
           : "像素作品视频正在播放"
       }
       onClick={replay}
     >
+      <img
+        className="pixel-video-poster"
+        src={particlePortraitPosterSrc}
+        alt=""
+        aria-hidden="true"
+      />
       <video
         ref={videoRef}
         className="pixel-video-media"
@@ -2086,14 +2131,13 @@ function InteractiveParticlePortrait({
         muted
         playsInline
         preload="auto"
-        onLoadedData={() => {
-          setReady(true);
-          onReady();
-        }}
+        poster={particlePortraitPosterSrc}
+        onLoadedData={markReady}
+        onCanPlay={markReady}
         onPlaying={() => {
-          setReady(true);
+          markReady();
           setEnded(false);
-          onReady();
+          setPlaybackBlocked(false);
         }}
         onEnded={() => {
           setEnded(true);
@@ -2102,11 +2146,12 @@ function InteractiveParticlePortrait({
         onError={() => {
           setReady(false);
           setEnded(false);
+          setFailed(true);
           onError();
         }}
       />
       <span className="pixel-video-replay" aria-hidden="true">
-        CLICK TO REPLAY
+        {playbackBlocked || failed ? "TAP TO PLAY" : "CLICK TO REPLAY"}
       </span>
     </button>
   );
@@ -2231,7 +2276,7 @@ function VisualScene({
         setIsInView(true);
         observer.disconnect();
       },
-      { threshold: 0.18 },
+      { rootMargin: "720px 0px", threshold: 0.01 },
     );
 
     observer.observe(scene);
@@ -2258,9 +2303,9 @@ function VisualScene({
             className="project-asset"
             src={resolveOptimizedImageUrl(visual.src, 1600, 78)}
             srcSet={`${resolveOptimizedImageUrl(visual.src, 960, 76)} 960w, ${resolveOptimizedImageUrl(visual.src, 1600, 78)} 1600w, ${resolveOptimizedImageUrl(visual.src, 2400, 80)} 2400w`}
-            sizes="(max-width: 820px) 92vw, 50vw"
+            sizes="(max-width: 820px) 100vw, 50vw"
             alt={visual.label}
-            loading={index < 2 ? "eager" : "lazy"}
+            loading={index < 2 || isInView ? "eager" : "lazy"}
             decoding="async"
             onLoad={(event) => {
               const image = event.currentTarget;
@@ -3595,6 +3640,7 @@ function ProjectDetail({
     if (!detail || !gallery) return;
 
     targetScrollRef.current = 0;
+    detail.scrollTop = 0;
     gallery.scrollTop = 0;
 
     const handleWheel = (event: WheelEvent) => {
